@@ -171,8 +171,6 @@
       <select id="sel-loc" onchange="onLoc()"></select>
       <label class="fld">Colegio</label>
       <select id="sel-col" disabled onchange="onCol()"></select>
-      <label class="fld">Jornada</label>
-      <select id="sel-jor" disabled onchange="onJor()"></select>
       <label class="fld">Aula</label>
       <select id="sel-aula" disabled onchange="onAula()"></select>
       <div id="clsinfo" class="clsinfo">
@@ -315,23 +313,19 @@ function afterLoad(){
 let cur=null, draft=null;
 function fillLoc(){ const l=uniq(CLASES.map(c=>c.loc)).sort();
   $('sel-loc').innerHTML=opt("","Selecciona…")+l.map(x=>opt(x)).join(''); }
+function aulaLabelFull(c){ return [c.aula, c.jor?("Jornada "+c.jor):null, c.curso].filter(Boolean).join(" · "); }
 function onLoc(){ const loc=$('sel-loc').value;
   const cols=uniq(CLASES.filter(c=>c.loc===loc).map(c=>c.col)).sort();
-  const s=$('sel-col'); s.innerHTML=opt("","Selecciona…")+cols.map(c=>opt(c,shortCol(c))).join(''); s.disabled=!loc; resetFrom('col'); }
+  const s=$('sel-col'); s.innerHTML=opt("","Selecciona…")+cols.map(c=>opt(c,shortCol(c))).join(''); s.disabled=!loc;
+  $('sel-aula').innerHTML=opt("","—"); $('sel-aula').disabled=true; clearDetail(); }
 function onCol(){ const loc=$('sel-loc').value, col=$('sel-col').value;
-  const j=uniq(CLASES.filter(c=>c.loc===loc&&c.col===col).map(c=>c.jor));
-  const s=$('sel-jor'); s.innerHTML=opt("","Selecciona…")+j.map(x=>opt(x)).join(''); s.disabled=!col; resetFrom('jor'); }
-function onJor(){ const loc=$('sel-loc').value, col=$('sel-col').value, jor=$('sel-jor').value;
-  const a=CLASES.filter(c=>c.loc===loc&&c.col===col&&c.jor===jor);
-  const s=$('sel-aula'); s.innerHTML=opt("","Selecciona…")+a.map(c=>opt(c.id,aulaLabel(c))).join(''); s.disabled=!jor; resetFrom('aula'); }
-function resetFrom(level){
-  if(level==='col'){ $('sel-jor').innerHTML=opt("","—"); $('sel-jor').disabled=true; }
-  if(level==='col'||level==='jor'){ $('sel-aula').innerHTML=opt("","—"); $('sel-aula').disabled=true; }
-  cur=null; draft=null;
-  ['clsinfo','sesiones','namewrap','actions'].forEach(x=>$(x).classList.remove('show'));
-}
+  const a=CLASES.filter(c=>c.loc===loc&&c.col===col)
+    .sort((x,y)=>String(x.aula||"").localeCompare(String(y.aula||""),'es',{numeric:true})||String(x.jor).localeCompare(String(y.jor)));
+  const s=$('sel-aula'); s.innerHTML=opt("","Selecciona…")+a.map(c=>opt(c.id,aulaLabelFull(c))).join(''); s.disabled=!col; clearDetail(); }
+function clearDetail(){ cur=null; draft=null;
+  ['clsinfo','sesiones','namewrap','actions'].forEach(x=>$(x).classList.remove('show')); }
 function onAula(){ const id=$('sel-aula').value; cur=CLASES.find(c=>c.id===id)||null;
-  if(!cur){ resetFrom('aula'); return; } draft=cur.ses.map(s=>({f:s.f,e:s.e})); renderClase(); }
+  if(!cur){ clearDetail(); return; } draft=cur.ses.map(s=>({f:s.f,e:s.e})); renderClase(); }
 function renderClase(){
   $('i-cur').textContent=cur.curso||"—"; $('i-ges').textContent=cur.ges||"—";
   $('i-est').textContent=cur.est||"—"; $('i-con').textContent=cur.con||"—";
