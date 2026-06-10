@@ -117,6 +117,8 @@
   .matrix td.mp{background:#fdf1e3;color:#b9750f;font-weight:800;}
   .matrix td.m0{background:#f6f7fa;color:var(--gris);font-weight:700;}
   .matrix td.x{color:#c7ccd6;}
+  .matrix tr.locrow td{background:#eaedf3;color:var(--tinta);font-weight:800;text-align:left;
+    font-size:11px;text-transform:uppercase;letter-spacing:.04em;position:sticky;left:0;}
 
   .aula-card{border:1px solid var(--linea);border-radius:14px;padding:13px;margin-bottom:11px;}
   .aula-hd{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:3px;gap:8px;}
@@ -204,6 +206,10 @@
 
   <!-- GENERAL -->
   <div id="view-gen" class="hide">
+    <div class="card">
+      <label class="fld">Filtrar por gestor(es)</label>
+      <select id="gen-ges" onchange="renderGen()"></select>
+    </div>
     <div class="kpis">
       <div class="kpi c-com"><b id="k-com">0</b><span>Completadas</span></div>
       <div class="kpi c-age"><b id="k-age">0</b><span>Agendadas</span></div>
@@ -299,7 +305,9 @@ async function loadData(){
 }
 function afterLoad(){
   fillLoc(); fillDashLoc();
-  $('reg-name').innerHTML = opt("","Selecciona…")+gestores().map(g=>opt(g)).join('');
+  const gs=gestores().sort((a,b)=>a.localeCompare(b,'es'));
+  $('reg-name').innerHTML = opt("","Selecciona…")+gs.map(g=>opt(g)).join('');
+  $('gen-ges').innerHTML = opt("","Todos los gestores")+gs.map(g=>opt(g)).join('');
   if(!CONFIG.APPS_URL){ $('btn-save').textContent="Guardar (demo)"; }
 }
 
@@ -408,34 +416,42 @@ function renderColegio(){
 
 /* ============ GENERAL ============ */
 function renderGen(){
-  let com=0,age=0,por=0; CLASES.forEach(c=>c.ses.forEach(s=>{ s.e===2?com++:s.e===1?age++:por++; }));
+  const gsel=$('gen-ges').value;
+  const data = gsel? CLASES.filter(c=>c.ges===gsel) : CLASES;
+
+  let com=0,age=0,por=0; data.forEach(c=>c.ses.forEach(s=>{ s.e===2?com++:s.e===1?age++:por++; }));
   $('k-com').textContent=com; $('k-age').textContent=age; $('k-por').textContent=por;
 
-  // columnas = aulas existentes (Aula 1..N)
-  const aulas=uniq(CLASES.map(c=>c.aula).filter(Boolean)).sort((a,b)=>a.localeCompare(b,'es',{numeric:true}));
-  // filas = colegios, ordenados por localidad y nombre
-  const schools=uniq(CLASES.map(c=>c.col));
-  const meta=schools.map(col=>{ const any=CLASES.find(c=>c.col===col); return {col, loc:any?any.loc:""}; })
-    .sort((a,b)=> String(a.loc).localeCompare(String(b.loc),'es')||String(a.col).localeCompare(String(b.col),'es'));
+  // columnas = aulas presentes en la selección
+  const aulas=uniq(data.map(c=>c.aula).filter(Boolean)).sort((a,b)=>a.localeCompare(b,'es',{numeric:true}));
+  const ncols=aulas.length+1;
+  // localidades ordenadas
+  const locs=uniq(data.map(c=>c.loc)).sort((a,b)=>String(a).localeCompare(String(b),'es'));
 
   let h=`<thead><tr><th class="lcol">Colegio</th>`+
     aulas.map(a=>`<th>${a.replace(/Aula\s*/,'A')}</th>`).join('')+`</tr></thead><tbody>`;
-  meta.forEach(s=>{
-    h+=`<tr><td class="lcol"><b>${shortCol(s.col)}</b><span>${s.loc}</span></td>`;
-    aulas.forEach(a=>{
-      const cls=CLASES.filter(c=>c.col===s.col && c.aula===a);
-      if(!cls.length){ h+=`<td class="x">—</td>`; return; }
-      const done=cls.reduce((t,c)=>t+c.ses.filter(x=>x.e===2).length,0);
-      const tot=cls.length*NSES;
-      const cl=done===tot?'m4':(done>0?'mp':'m0');
-      h+=`<td class="${cl}">${done}/${tot}</td>`;
+  if(!data.length){ h+=`<tr><td colspan="${ncols}" style="padding:14px;color:var(--gris);">Sin colegios para este gestor.</td></tr>`; }
+  locs.forEach(loc=>{
+    const schools=uniq(data.filter(c=>c.loc===loc).map(c=>c.col))
+      .sort((a,b)=>String(a).localeCompare(String(b),'es'));
+    h+=`<tr class="locrow"><td colspan="${ncols}">${loc} · ${schools.length} colegio(s)</td></tr>`;
+    schools.forEach(col=>{
+      h+=`<tr><td class="lcol"><b>${shortCol(col)}</b></td>`;
+      aulas.forEach(a=>{
+        const cls=data.filter(c=>c.col===col && c.aula===a);
+        if(!cls.length){ h+=`<td class="x">—</td>`; return; }
+        const done=cls.reduce((t,c)=>t+c.ses.filter(x=>x.e===2).length,0);
+        const tot=cls.length*NSES;
+        const cl=done===tot?'m4':(done>0?'mp':'m0');
+        h+=`<td class="${cl}">${done}/${tot}</td>`;
+      });
+      h+=`</tr>`;
     });
-    h+=`</tr>`;
   });
   h+=`</tbody>`;
   $('gen-matrix').innerHTML=h;
 
-  const late=[]; CLASES.forEach(c=>c.ses.forEach((s,i)=>{ if(s.e===1&&s.f&&s.f<HOY) late.push({c,i,f:s.f}); }));
+  const late=[]; data.forEach(c=>c.ses.forEach((s,i)=>{ if(s.e===1&&s.f&&s.f<HOY) late.push({c,i,f:s.f}); }));
   $('gen-alert').innerHTML=`<div class="ah">⚠ Sesiones agendadas vencidas (${late.length})</div>`+
     (late.length? late.slice(0,40).map(x=>`<div class="ai"><b>${shortCol(x.c.col)}</b> · ${aulaLabel(x.c)} — Sesión ${x.i+1}, ${fmtFecha(x.f)}</div>`).join('')
       : `<div class="none">Ninguna sesión agendada está vencida.</div>`);
