@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Seguimiento de Sesiones — ARC</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --rojo:#e8554e; --naranja:#f2994a; --amarillo:#f2c94c;
+    --verde:#27ae60; --azul:#2f80ed; --morado:#9b51e0;
+    --tinta:#2b2d42; --gris:#6b7280; --linea:#e6e8ef; --fondo:#f4f5f9;
+    --por:#9aa0ac; --age:#f2994a; --com:#27ae60;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:'Nunito',system-ui,sans-serif;background:var(--fondo);color:var(--tinta);
+    display:flex;justify-content:center;padding:18px 12px 70px;-webkit-font-smoothing:antialiased;}
+  .app{width:100%;max-width:460px;}
+  .top{display:flex;align-items:center;gap:10px;margin-bottom:14px;}
+  .logo{width:38px;height:38px;border-radius:10px;flex:none;
+    background:linear-gradient(135deg,var(--rojo),var(--naranja),var(--amarillo),var(--verde),var(--azul),var(--morado));}
+  .top h1{font-size:18px;font-weight:800;line-height:1.05;}
+  .top p{font-size:12px;color:var(--gris);font-weight:600;}
+
+  .banner{background:#fff7e6;border:1px solid #f3d98a;border-radius:10px;padding:9px 12px;
+    font-size:11.5px;font-weight:700;color:#92670c;margin-bottom:14px;display:none;}
+  .banner.show{display:block;}
+
+  .tabs{display:flex;background:#fff;border:1px solid var(--linea);border-radius:12px;padding:4px;margin-bottom:16px;}
+  .tabs button{flex:1;border:0;background:none;font-family:inherit;font-weight:700;font-size:12.5px;color:var(--gris);
+    padding:9px 4px;border-radius:9px;cursor:pointer;}
+  .tabs button.on{background:var(--tinta);color:#fff;}
+
+  .card{background:#fff;border:1px solid var(--linea);border-radius:16px;padding:16px;margin-bottom:14px;
+    box-shadow:0 1px 2px rgba(20,20,50,.04);}
+  label.fld{display:block;font-size:12px;font-weight:700;color:var(--gris);margin:12px 0 5px;text-transform:uppercase;letter-spacing:.03em;}
+  label.fld:first-child{margin-top:0;}
+  select{width:100%;font-family:inherit;font-size:15px;font-weight:600;color:var(--tinta);
+    background:#fff;border:1.5px solid var(--linea);border-radius:11px;padding:12px;appearance:none;
+    background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='20' height='20' fill='none' stroke='%236b7280' stroke-width='2'><path d='M5 8l5 5 5-5'/></svg>");
+    background-repeat:no-repeat;background-position:right 12px center;}
+  select:disabled{background:#f6f7fa;color:#b6bac4;cursor:not-allowed;}
+  select:focus{outline:none;border-color:var(--azul);}
+
+  .clsinfo{display:none;background:#f8f9fc;border:1px solid var(--linea);border-radius:13px;padding:13px;margin-top:14px;}
+  .clsinfo.show{display:block;}
+  .clsinfo .row{display:flex;justify-content:space-between;font-size:13px;padding:3px 0;gap:10px;}
+  .clsinfo .row span:first-child{color:var(--gris);font-weight:600;white-space:nowrap;}
+  .clsinfo .row span:last-child{font-weight:700;text-align:right;}
+  .prog{margin-top:10px;}
+  .prog .bar{height:9px;border-radius:6px;background:#e9ebf2;overflow:hidden;}
+  .prog .bar i{display:block;height:100%;background:var(--verde);border-radius:6px;transition:width .3s;}
+  .prog .lbl{font-size:12px;font-weight:700;color:var(--gris);margin-top:6px;}
+
+  .sesiones{display:none;}
+  .sesiones.show{display:block;}
+  .ses{border:1px solid var(--linea);border-radius:13px;padding:12px;margin-bottom:10px;}
+  .ses .hd{display:flex;align-items:center;gap:8px;margin-bottom:9px;}
+  .ses .num{width:26px;height:26px;border-radius:8px;background:var(--tinta);color:#fff;font-weight:800;font-size:13px;
+    display:flex;align-items:center;justify-content:center;flex:none;}
+  .ses .ti{font-weight:700;font-size:14px;}
+  .seg{display:flex;gap:6px;margin-bottom:9px;}
+  .seg button{flex:1;border:1.5px solid var(--linea);background:#fff;font-family:inherit;font-weight:700;font-size:11.5px;
+    color:var(--gris);padding:8px 4px;border-radius:9px;cursor:pointer;line-height:1.1;}
+  .seg button.s-por.on{background:var(--por);border-color:var(--por);color:#fff;}
+  .seg button.s-age.on{background:var(--age);border-color:var(--age);color:#fff;}
+  .seg button.s-com.on{background:var(--com);border-color:var(--com);color:#fff;}
+  .ses input[type=date]{width:100%;font-family:inherit;font-size:14px;font-weight:600;color:var(--tinta);
+    border:1.5px solid var(--linea);border-radius:10px;padding:10px 12px;}
+  .ses input[type=date]:disabled{background:#f6f7fa;color:#b6bac4;}
+  .ses input[type=date]:focus{outline:none;border-color:var(--azul);}
+
+  .actions{display:none;gap:10px;margin-top:4px;}
+  .actions.show{display:flex;}
+  .btn{flex:1;border:0;font-family:inherit;font-weight:800;font-size:15px;padding:14px;border-radius:13px;cursor:pointer;}
+  .btn.save{background:var(--azul);color:#fff;}
+  .btn.save:active{transform:translateY(1px);}
+  .btn.save:disabled{opacity:.55;}
+  .name-wrap{display:none;}
+  .name-wrap.show{display:block;}
+
+  .kpis{display:flex;gap:10px;margin-bottom:14px;}
+  .kpi{flex:1;background:#fff;border:1px solid var(--linea);border-radius:14px;padding:13px 8px;text-align:center;}
+  .kpi b{display:block;font-size:23px;font-weight:800;}
+  .kpi span{font-size:10.5px;font-weight:700;color:var(--gris);text-transform:uppercase;letter-spacing:.02em;}
+  .kpi.c-com b{color:var(--com);} .kpi.c-age b{color:var(--age);} .kpi.c-por b{color:var(--por);}
+
+  .dtitle{font-size:13px;font-weight:800;color:var(--gris);text-transform:uppercase;letter-spacing:.03em;margin:4px 0 10px;}
+  .grp{margin-bottom:13px;}
+  .grp .gh{display:flex;justify-content:space-between;font-size:13px;font-weight:700;margin-bottom:5px;gap:8px;}
+  .grp .gh span:first-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .grp .gh span:last-child{color:var(--gris);white-space:nowrap;}
+  .stack{height:14px;border-radius:7px;overflow:hidden;display:flex;background:#eef0f5;}
+  .stack i{height:100%;}
+  .stack .x-com{background:var(--com);} .stack .x-age{background:var(--age);} .stack .x-por{background:var(--por);}
+  .legend{display:flex;gap:14px;font-size:12px;font-weight:700;color:var(--gris);margin-top:4px;flex-wrap:wrap;}
+  .legend i{display:inline-block;width:11px;height:11px;border-radius:3px;margin-right:5px;vertical-align:middle;}
+
+  .aula-card{border:1px solid var(--linea);border-radius:14px;padding:13px;margin-bottom:11px;}
+  .aula-hd{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:3px;gap:8px;}
+  .aula-hd .nm{font-weight:800;font-size:15px;}
+  .aula-hd .pc{font-weight:800;font-size:14px;color:var(--verde);white-space:nowrap;}
+  .aula-sub{font-size:12px;color:var(--gris);font-weight:600;margin-bottom:10px;}
+  .cells{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;}
+  .cell{border-radius:9px;padding:7px 2px 6px;text-align:center;border:1.5px solid var(--linea);background:#fff;}
+  .cell.e2{background:#eaf7ef;border-color:#bfe6cd;}
+  .cell.e1{background:#fdf1e3;border-color:#f6dcbc;}
+  .cell.e0{background:#f6f7fa;border-color:var(--linea);}
+  .cell .sn{font-size:11px;font-weight:800;color:var(--gris);}
+  .cell .dot{width:9px;height:9px;border-radius:50%;margin:4px auto;}
+  .cell.e2 .dot{background:var(--com);} .cell.e1 .dot{background:var(--age);} .cell.e0 .dot{background:var(--por);}
+  .cell .dt{font-size:9.5px;font-weight:700;color:var(--gris);line-height:1.1;}
+
+  .alert{background:#fff5f4;border:1px solid #f6cfcc;border-radius:13px;padding:13px;}
+  .alert .ah{font-weight:800;color:var(--rojo);font-size:13px;margin-bottom:8px;}
+  .alert .ai{font-size:13px;font-weight:600;padding:5px 0;border-top:1px dashed #f0d2cf;}
+  .alert .ai:first-of-type{border-top:0;}
+  .alert .ai b{color:var(--tinta);}
+  .alert .none{font-size:13px;color:var(--gris);font-weight:600;}
+
+  .hide{display:none;}
+  .muted{font-size:13px;color:var(--gris);font-weight:600;text-align:center;padding:20px 0;}
+  .toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%) translateY(20px);
+    background:var(--tinta);color:#fff;font-weight:700;font-size:14px;padding:13px 20px;border-radius:12px;
+    opacity:0;pointer-events:none;transition:.25s;z-index:9;text-align:center;max-width:90%;}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="top">
+    <div class="logo"></div>
+    <div><h1>Seguimiento de Sesiones</h1><p>Aulas en Re-Conexión · ARC</p></div>
+  </div>
+  <div class="banner" id="banner"></div>
+
+  <div class="tabs">
+    <button id="tab-reg" class="on" onclick="setTab('reg')">Registrar</button>
+    <button id="tab-col" onclick="setTab('col')">Por colegio</button>
+    <button id="tab-gen" onclick="setTab('gen')">General</button>
+  </div>
+
+  <!-- REGISTRAR -->
+  <div id="view-reg">
+    <div class="card">
+      <label class="fld">Localidad</label>
+      <select id="sel-loc" onchange="onLoc()"></select>
+      <label class="fld">Colegio</label>
+      <select id="sel-col" disabled onchange="onCol()"></select>
+      <label class="fld">Jornada</label>
+      <select id="sel-jor" disabled onchange="onJor()"></select>
+      <label class="fld">Aula</label>
+      <select id="sel-aula" disabled onchange="onAula()"></select>
+      <div id="clsinfo" class="clsinfo">
+        <div class="row"><span>Clase / curso</span><span id="i-cur"></span></div>
+        <div class="row"><span>Gestor(a)</span><span id="i-ges"></span></div>
+        <div class="row"><span>Estudiantes</span><span id="i-est"></span></div>
+        <div class="row"><span>Contacto</span><span id="i-con"></span></div>
+        <div class="prog"><div class="bar"><i id="i-bar"></i></div><div class="lbl" id="i-lbl"></div></div>
+      </div>
+    </div>
+    <div id="sesiones" class="sesiones"></div>
+    <div class="card name-wrap" id="namewrap">
+      <label class="fld">¿Quién registra?</label>
+      <select id="reg-name"></select>
+    </div>
+    <div class="actions" id="actions">
+      <button class="btn save" id="btn-save" onclick="save()">Guardar cambios</button>
+    </div>
+  </div>
+
+  <!-- POR COLEGIO -->
+  <div id="view-col" class="hide">
+    <div class="card">
+      <label class="fld">Colegio</label>
+      <select id="dsel-col" onchange="renderColegio()"></select>
+    </div>
+    <div id="col-body"></div>
+  </div>
+
+  <!-- GENERAL -->
+  <div id="view-gen" class="hide">
+    <div class="kpis">
+      <div class="kpi c-com"><b id="k-com">0</b><span>Completadas</span></div>
+      <div class="kpi c-age"><b id="k-age">0</b><span>Agendadas</span></div>
+      <div class="kpi c-por"><b id="k-por">0</b><span>Por agendar</span></div>
+    </div>
+    <div class="card">
+      <div class="dtitle">Avance por colegio</div>
+      <div id="gen-cols"></div>
+      <div class="legend">
+        <span><i style="background:var(--com)"></i>Completada</span>
+        <span><i style="background:var(--age)"></i>Agendada</span>
+        <span><i style="background:var(--por)"></i>Por agendar</span>
+      </div>
+    </div>
+    <div class="card">
+      <div class="dtitle">Avance por aula (todo el proyecto)</div>
+      <div id="gen-aulas"></div>
+    </div>
+    <div class="alert" id="gen-alert"></div>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+/* =====================================================================
+   CONFIGURACIÓN — pega aquí las URLs cuando tengas la hoja publicada.
+   Si quedan vacías, la página corre en MODO DEMO con datos de ejemplo.
+   ===================================================================== */
+const CONFIG = {
+  // Pega aquí la URL /exec de tu app web (Apps Script). Una sola URL para leer y guardar.
+  // Si queda vacía, la página corre en MODO DEMO con datos de ejemplo.
+  APPS_URL: "https://script.google.com/macros/s/AKfycbxVytGYPYqdloofGCSdKmaAzs89HfHUPxpaShuA82ZW0KO91gPHQ1S49GToLgzjhFWZ/exec"
+};
+
+const NSES = 4;   // sesiones 1..4 (sin sesión 0). El índice 0 del arreglo = Sesión 1.
+const ESTADO_TXT = ["Por agendar","Agendada","Completada"];
+const HOY = new Date().toISOString().slice(0,10);
+
+/* ---- datos DEMO (se usan solo si CONFIG está vacío) ---- */
+const DEMO = [
+  {id:"D1", ges:"Camila", cod:"S046", loc:"Antonio Nariño", col:"Normal Superior Distrital María Montessori (IED)", jor:"Única", curso:"804", aula:"Aula 1", est:37, con:"Jesús García",
+    ses:[{f:"2026-04-27",e:2},{f:"2026-05-04",e:2},{f:"2026-05-05",e:2},{f:"2026-05-12",e:2}]},
+  {id:"D2", ges:"Camila", cod:"S025", loc:"Antonio Nariño", col:"Francisco de Paula Santander (IED)", jor:"Única", curso:"802", aula:"Aula 2", est:26, con:"Isis Ayala",
+    ses:[{f:"2026-04-21",e:2},{f:"2026-05-11",e:2},{f:"2026-05-14",e:1},{f:"2026-05-22",e:1}]},
+  {id:"D3", ges:"Paula V", loc:"Kennedy", col:"INEM Francisco de Paula Santander (IED)", jor:"Mañana", curso:"901", aula:"Aula 1", est:33, con:"Marta Gómez",
+    ses:[{f:"2026-05-04",e:2},{f:"2026-05-11",e:2},{f:"2026-06-02",e:1},{f:"",e:0}]},
+  {id:"D4", ges:"Paula V", loc:"Kennedy", col:"INEM Francisco de Paula Santander (IED)", jor:"Tarde", curso:"701", aula:"Aula 2", est:30, con:"Luis Parra",
+    ses:[{f:"2026-06-08",e:1},{f:"",e:0},{f:"",e:0},{f:"",e:0}]},
+  {id:"D5", ges:"Andrés", loc:"Suba", col:"Gerardo Paredes (IED)", jor:"Mañana", curso:"1001", aula:"Aula 1", est:28, con:"Ana Ríos",
+    ses:[{f:"",e:0},{f:"",e:0},{f:"",e:0},{f:"",e:0}]},
+];
+
+let CLASES=[];
+const $=id=>document.getElementById(id);
+const uniq=a=>[...new Set(a)];
+const shortCol=s=>String(s||"").replace(/\\(IED\\)/,'').trim();
+const estadoNum=t=>{const n=String(t||"").toLowerCase(); return n.indexOf("complet")>=0?2:n.indexOf("agenda")>=0?1:0;};
+function fmtFecha(f){ if(!f) return "—"; const d=new Date(f+"T00:00"); return isNaN(d)?f:d.toLocaleDateString('es-CO',{weekday:'short',day:'numeric',month:'short'}); }
+function fmtCorta(f){ if(!f) return "—"; const d=new Date(f+"T00:00"); return isNaN(d)?f:d.toLocaleDateString('es-CO',{day:'numeric',month:'short'}); }
+function opt(v,t){ return `<option value="${v}">${(t!=null?t:v)}</option>`; }
+function gestores(){ return uniq(CLASES.map(c=>c.ges).filter(Boolean)); }
+function aulaLabel(c){ return (c.aula? c.aula+" · ":"")+ (c.curso||""); }
+
+/* ---------- carga de datos ---------- */
+function getJson(url){ return fetch(url).then(r=>r.json()); }
+
+async function loadData(){
+  if(!CONFIG.APPS_URL){             // modo demo
+    CLASES = JSON.parse(JSON.stringify(DEMO));
+    $('banner').textContent="Modo demostración · datos de ejemplo. Conecta tu app web en CONFIG para usar datos reales.";
+    $('banner').classList.add('show');
+    afterLoad(); return;
+  }
+  try{
+    const base=CONFIG.APPS_URL;
+    const [cl,se] = await Promise.all([
+      getJson(base+(base.indexOf('?')>=0?'&':'?')+"tipo=clases"),
+      getJson(base+(base.indexOf('?')>=0?'&':'?')+"tipo=sesiones")
+    ]);
+    const byId={};
+    CLASES = (cl||[]).filter(r=>r.class_id).map(r=>{
+      const c={ id:r.class_id, ges:r.gestor, cod:r.codigo_aer, loc:r.localidad, col:r.colegio,
+        jor:r.jornada, curso:r.curso, aula:r.aula, est:r.estudiantes, con:r.contacto_colegio,
+        ses:Array.from({length:NSES},()=>({f:"",e:0})) };
+      byId[c.id]=c; return c;
+    });
+    (se||[]).forEach(r=>{ const c=byId[r.class_id]; const j=parseInt(r.sesion,10)-1;  // sesión 1..4 -> índice 0..3
+      if(c && j>=0 && j<NSES){ c.ses[j]={ f:String(r.fecha||"").slice(0,10), e:estadoNum(r.estado) }; }});
+    afterLoad();
+  }catch(err){
+    $('banner').textContent="No se pudo leer la hoja. Revisa la URL en CONFIG. ("+err+")";
+    $('banner').classList.add('show');
+    CLASES = JSON.parse(JSON.stringify(DEMO)); afterLoad();
+  }
+}
+function afterLoad(){
+  fillLoc(); fillColSelect();
+  $('reg-name').innerHTML = opt("","Selecciona…")+gestores().map(g=>opt(g)).join('');
+  if(!CONFIG.APPS_URL){ $('btn-save').textContent="Guardar (demo)"; }
+}
+
+/* ============ REGISTRAR ============ */
+let cur=null, draft=null;
+function fillLoc(){ const l=uniq(CLASES.map(c=>c.loc)).sort();
+  $('sel-loc').innerHTML=opt("","Selecciona…")+l.map(x=>opt(x)).join(''); }
+function onLoc(){ const loc=$('sel-loc').value;
+  const cols=uniq(CLASES.filter(c=>c.loc===loc).map(c=>c.col)).sort();
+  const s=$('sel-col'); s.innerHTML=opt("","Selecciona…")+cols.map(c=>opt(c,shortCol(c))).join(''); s.disabled=!loc; resetFrom('col'); }
+function onCol(){ const loc=$('sel-loc').value, col=$('sel-col').value;
+  const j=uniq(CLASES.filter(c=>c.loc===loc&&c.col===col).map(c=>c.jor));
+  const s=$('sel-jor'); s.innerHTML=opt("","Selecciona…")+j.map(x=>opt(x)).join(''); s.disabled=!col; resetFrom('jor'); }
+function onJor(){ const loc=$('sel-loc').value, col=$('sel-col').value, jor=$('sel-jor').value;
+  const a=CLASES.filter(c=>c.loc===loc&&c.col===col&&c.jor===jor);
+  const s=$('sel-aula'); s.innerHTML=opt("","Selecciona…")+a.map(c=>opt(c.id,aulaLabel(c))).join(''); s.disabled=!jor; resetFrom('aula'); }
+function resetFrom(level){
+  if(level==='col'){ $('sel-jor').innerHTML=opt("","—"); $('sel-jor').disabled=true; }
+  if(level==='col'||level==='jor'){ $('sel-aula').innerHTML=opt("","—"); $('sel-aula').disabled=true; }
+  cur=null; draft=null;
+  ['clsinfo','sesiones','namewrap','actions'].forEach(x=>$(x).classList.remove('show'));
+}
+function onAula(){ const id=$('sel-aula').value; cur=CLASES.find(c=>c.id===id)||null;
+  if(!cur){ resetFrom('aula'); return; } draft=cur.ses.map(s=>({f:s.f,e:s.e})); renderClase(); }
+function renderClase(){
+  $('i-cur').textContent=cur.curso||"—"; $('i-ges').textContent=cur.ges||"—";
+  $('i-est').textContent=cur.est||"—"; $('i-con').textContent=cur.con||"—";
+  $('clsinfo').classList.add('show');
+  let html='';
+  for(let i=0;i<NSES;i++){ const s=draft[i];
+    html+=`<div class="ses"><div class="hd"><div class="num">${i+1}</div><div class="ti">Sesión ${i+1}</div></div>
+      <div class="seg">
+        <button class="s-por ${s.e===0?'on':''}" onclick="setEstado(${i},0)">Por agendar</button>
+        <button class="s-age ${s.e===1?'on':''}" onclick="setEstado(${i},1)">Agendada</button>
+        <button class="s-com ${s.e===2?'on':''}" onclick="setEstado(${i},2)">Completada</button>
+      </div>
+      <input type="date" value="${s.f}" ${s.e===0?'disabled':''} onchange="setFecha(${i},this.value)"></div>`;
+  }
+  $('sesiones').innerHTML=html; $('sesiones').classList.add('show');
+  $('namewrap').classList.add('show'); $('actions').classList.add('show');
+  $('reg-name').value = gestores().includes(cur.ges)? cur.ges : "";
+  updateProg();
+}
+function setEstado(i,e){ draft[i].e=e; if(e===0) draft[i].f=""; renderClase(); }
+function setFecha(i,v){ draft[i].f=v; }
+function updateProg(){ const d=draft.filter(s=>s.e===2).length;
+  $('i-bar').style.width=(d/NSES*100)+'%'; $('i-lbl').textContent=`${d}/${NSES} sesiones completadas`; }
+function save(){
+  const nm=$('reg-name').value;
+  if(!nm){ toast("Selecciona quién registra antes de guardar"); $('reg-name').focus(); return; }
+  const payload={ class_id:cur.id, updated_by:nm,
+    sesiones:draft.map((s,i)=>({sesion:i+1, fecha:s.f, estado:ESTADO_TXT[s.e]})) };
+  cur.ses=draft.map(s=>({f:s.f,e:s.e}));     // actualiza en memoria
+  if(CONFIG.APPS_URL){
+    $('btn-save').disabled=true;
+    fetch(CONFIG.APPS_URL,{method:"POST",mode:"no-cors",body:JSON.stringify(payload)})
+      .then(()=>{ toast(`Guardado · ${aulaLabel(cur)}`); })
+      .catch(()=>{ toast("Guardado local, pero falló el envío. Reintenta."); })
+      .finally(()=>{ $('btn-save').disabled=false; });
+  } else { toast(`Guardado · ${aulaLabel(cur)} (demo)`); }
+}
+
+/* ============ POR COLEGIO ============ */
+function fillColSelect(){ const cols=uniq(CLASES.map(c=>c.col)).sort();
+  $('dsel-col').innerHTML=opt("","Selecciona un colegio…")+cols.map(c=>opt(c,shortCol(c))).join(''); }
+function renderColegio(){
+  const col=$('dsel-col').value, body=$('col-body');
+  if(!col){ body.innerHTML=""; return; }
+  const aulas=CLASES.filter(c=>c.col===col)
+    .sort((a,b)=>String(a.aula||"").localeCompare(String(b.aula||""),'es',{numeric:true})||String(a.jor).localeCompare(String(b.jor)));
+  let com=0,age=0,por=0; aulas.forEach(c=>c.ses.forEach(s=>{ s.e===2?com++:s.e===1?age++:por++; }));
+  let html=`<div class="kpis">
+      <div class="kpi c-com"><b>${com}</b><span>Completadas</span></div>
+      <div class="kpi c-age"><b>${age}</b><span>Agendadas</span></div>
+      <div class="kpi c-por"><b>${por}</b><span>Por agendar</span></div></div>
+    <div class="card"><div class="dtitle">${aulas.length} aula(s) · detalle por sesión</div>`;
+  aulas.forEach(c=>{ const done=c.ses.filter(s=>s.e===2).length; let cells='';
+    c.ses.forEach((s,i)=>{ cells+=`<div class="cell e${s.e}"><div class="sn">S${i+1}</div><div class="dot"></div><div class="dt">${fmtCorta(s.f)}</div></div>`; });
+    html+=`<div class="aula-card">
+      <div class="aula-hd"><span class="nm">${aulaLabel(c)}</span><span class="pc">${done}/${NSES}</span></div>
+      <div class="aula-sub">${c.jor||""} · Gestor(a): ${c.ges||"—"}</div>
+      <div class="cells">${cells}</div></div>`; });
+  html+=`</div>`;
+  const late=[]; aulas.forEach(c=>c.ses.forEach((s,i)=>{ if(s.e===1&&s.f&&s.f<HOY) late.push({c,i,f:s.f}); }));
+  html+=`<div class="alert"><div class="ah">⚠ Sesiones agendadas vencidas (${late.length})</div>`+
+    (late.length? late.map(x=>`<div class="ai"><b>${aulaLabel(x.c)}</b> — Sesión ${x.i+1}, agendada ${fmtFecha(x.f)}</div>`).join('')
+      : `<div class="none">Ninguna sesión agendada está vencida en este colegio.</div>`)+`</div>`;
+  body.innerHTML=html;
+}
+
+/* ============ GENERAL ============ */
+function renderGen(){
+  let com=0,age=0,por=0; CLASES.forEach(c=>c.ses.forEach(s=>{ s.e===2?com++:s.e===1?age++:por++; }));
+  $('k-com').textContent=com; $('k-age').textContent=age; $('k-por').textContent=por;
+  const cols=uniq(CLASES.map(c=>c.col)).sort();
+  $('gen-cols').innerHTML=cols.map(col=>stackRow(shortCol(col),CLASES.filter(c=>c.col===col))).join('');
+  const aulas=uniq(CLASES.map(c=>c.aula||"(sin aula)")).sort((a,b)=>a.localeCompare(b,'es',{numeric:true}));
+  $('gen-aulas').innerHTML=aulas.map(au=>stackRow(au,CLASES.filter(c=>(c.aula||"(sin aula)")===au))).join('');
+  const late=[]; CLASES.forEach(c=>c.ses.forEach((s,i)=>{ if(s.e===1&&s.f&&s.f<HOY) late.push({c,i,f:s.f}); }));
+  $('gen-alert').innerHTML=`<div class="ah">⚠ Sesiones agendadas vencidas (${late.length})</div>`+
+    (late.length? late.slice(0,30).map(x=>`<div class="ai"><b>${shortCol(x.c.col)}</b> · ${aulaLabel(x.c)} — Sesión ${x.i+1}, ${fmtFecha(x.f)}</div>`).join('')
+      : `<div class="none">Ninguna sesión agendada está vencida.</div>`);
+}
+function stackRow(label,list){ let a=0,b=0,d=0,t=0;
+  list.forEach(c=>c.ses.forEach(s=>{ t++; s.e===2?a++:s.e===1?b++:d++; }));
+  const pc=t?Math.round(a/t*100):0;
+  return `<div class="grp"><div class="gh"><span>${label}</span><span>${pc}%</span></div>
+    <div class="stack"><i class="x-com" style="width:${t?a/t*100:0}%"></i>
+      <i class="x-age" style="width:${t?b/t*100:0}%"></i>
+      <i class="x-por" style="width:${t?d/t*100:0}%"></i></div></div>`;
+}
+
+/* ============ tabs + toast ============ */
+function setTab(t){
+  $('view-reg').classList.toggle('hide',t!=='reg');
+  $('view-col').classList.toggle('hide',t!=='col');
+  $('view-gen').classList.toggle('hide',t!=='gen');
+  $('tab-reg').classList.toggle('on',t==='reg');
+  $('tab-col').classList.toggle('on',t==='col');
+  $('tab-gen').classList.toggle('on',t==='gen');
+  if(t==='col') renderColegio();
+  if(t==='gen') renderGen();
+}
+let toTimer;
+function toast(m){ const t=$('toast'); t.textContent=m; t.classList.add('show');
+  clearTimeout(toTimer); toTimer=setTimeout(()=>t.classList.remove('show'),2600); }
+
+/* ============ init ============ */
+loadData();
+</script>
+</body>
+</html>
