@@ -96,6 +96,28 @@
   .legend{display:flex;gap:14px;font-size:12px;font-weight:700;color:var(--gris);margin-top:4px;flex-wrap:wrap;}
   .legend i{display:inline-block;width:11px;height:11px;border-radius:3px;margin-right:5px;vertical-align:middle;}
 
+  /* school header (Por colegio) */
+  .schoolname{font-weight:800;font-size:16px;line-height:1.15;}
+  .schoolsub{font-size:12px;color:var(--gris);font-weight:600;margin:2px 0 10px;}
+  .ginfo{display:flex;justify-content:space-between;gap:12px;font-size:13px;padding:4px 0;border-top:1px solid var(--linea);}
+  .ginfo:first-of-type{border-top:0;}
+  .ginfo span{color:var(--gris);font-weight:600;white-space:nowrap;}
+  .ginfo b{font-weight:700;text-align:right;}
+
+  /* matrix (General) */
+  .matrix-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;}
+  .matrix{border-collapse:collapse;width:100%;font-size:12.5px;}
+  .matrix th,.matrix td{border:1px solid var(--linea);padding:6px 8px;text-align:center;white-space:nowrap;}
+  .matrix th{background:#f6f7fa;font-weight:800;color:var(--gris);font-size:11px;position:sticky;top:0;}
+  .matrix th.lcol,.matrix td.lcol{text-align:left;}
+  .matrix td.lcol{white-space:normal;min-width:130px;max-width:180px;}
+  .matrix td.lcol b{font-weight:700;font-size:12.5px;}
+  .matrix td.lcol span{display:block;font-size:10px;color:var(--gris);font-weight:600;}
+  .matrix td.m4{background:#eaf7ef;color:var(--com);font-weight:800;}
+  .matrix td.mp{background:#fdf1e3;color:#b9750f;font-weight:800;}
+  .matrix td.m0{background:#f6f7fa;color:var(--gris);font-weight:700;}
+  .matrix td.x{color:#c7ccd6;}
+
   .aula-card{border:1px solid var(--linea);border-radius:14px;padding:13px;margin-bottom:11px;}
   .aula-hd{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:3px;gap:8px;}
   .aula-hd .nm{font-weight:800;font-size:15px;}
@@ -135,7 +157,7 @@
   <div class="banner" id="banner"></div>
 
   <div class="tabs">
-    <button id="tab-reg" class="on" onclick="setTab('reg')">Registrar</button>
+    <button id="tab-reg" class="on" onclick="setTab('reg')">Registrar Acción</button>
     <button id="tab-col" onclick="setTab('col')">Por colegio</button>
     <button id="tab-gen" onclick="setTab('gen')">General</button>
   </div>
@@ -172,8 +194,10 @@
   <!-- POR COLEGIO -->
   <div id="view-col" class="hide">
     <div class="card">
+      <label class="fld">Localidad</label>
+      <select id="dsel-loc" onchange="onDashLoc()"></select>
       <label class="fld">Colegio</label>
-      <select id="dsel-col" onchange="renderColegio()"></select>
+      <select id="dsel-col" disabled onchange="renderColegio()"></select>
     </div>
     <div id="col-body"></div>
   </div>
@@ -186,17 +210,14 @@
       <div class="kpi c-por"><b id="k-por">0</b><span>Por agendar</span></div>
     </div>
     <div class="card">
-      <div class="dtitle">Avance por colegio</div>
-      <div id="gen-cols"></div>
+      <div class="dtitle">Sesiones completadas · colegio × aula</div>
+      <div class="matrix-wrap"><table id="gen-matrix" class="matrix"></table></div>
       <div class="legend">
-        <span><i style="background:var(--com)"></i>Completada</span>
-        <span><i style="background:var(--age)"></i>Agendada</span>
-        <span><i style="background:var(--por)"></i>Por agendar</span>
+        <span><i style="background:#27ae60"></i>4/4</span>
+        <span><i style="background:#f2c98a"></i>parcial</span>
+        <span><i style="background:#dfe3ea"></i>sin iniciar</span>
+        <span>— = sin aula</span>
       </div>
-    </div>
-    <div class="card">
-      <div class="dtitle">Avance por aula (todo el proyecto)</div>
-      <div id="gen-aulas"></div>
     </div>
     <div class="alert" id="gen-alert"></div>
   </div>
@@ -235,7 +256,7 @@ const DEMO = [
 let CLASES=[];
 const $=id=>document.getElementById(id);
 const uniq=a=>[...new Set(a)];
-const shortCol=s=>String(s||"").replace(/\\(IED\\)/,'').trim();
+const shortCol=s=>String(s||"").replace(/\s*\(IED\)/i,'').replace(/^COLEGIO\s+/i,'').trim();
 const estadoNum=t=>{const n=String(t||"").toLowerCase(); return n.indexOf("complet")>=0?2:n.indexOf("agenda")>=0?1:0;};
 function fmtFecha(f){ if(!f) return "—"; const d=new Date(f+"T00:00"); return isNaN(d)?f:d.toLocaleDateString('es-CO',{weekday:'short',day:'numeric',month:'short'}); }
 function fmtCorta(f){ if(!f) return "—"; const d=new Date(f+"T00:00"); return isNaN(d)?f:d.toLocaleDateString('es-CO',{day:'numeric',month:'short'}); }
@@ -263,6 +284,7 @@ async function loadData(){
     CLASES = (cl||[]).filter(r=>r.class_id).map(r=>{
       const c={ id:r.class_id, ges:r.gestor, cod:r.codigo_aer, loc:r.localidad, col:r.colegio,
         jor:r.jornada, curso:r.curso, aula:r.aula, est:r.estudiantes, con:r.contacto_colegio,
+        rol:r.rol_contacto, cel:r.celular_contacto,
         ses:Array.from({length:NSES},()=>({f:"",e:0})) };
       byId[c.id]=c; return c;
     });
@@ -276,7 +298,7 @@ async function loadData(){
   }
 }
 function afterLoad(){
-  fillLoc(); fillColSelect();
+  fillLoc(); fillDashLoc();
   $('reg-name').innerHTML = opt("","Selecciona…")+gestores().map(g=>opt(g)).join('');
   if(!CONFIG.APPS_URL){ $('btn-save').textContent="Guardar (demo)"; }
 }
@@ -341,15 +363,31 @@ function save(){
 }
 
 /* ============ POR COLEGIO ============ */
-function fillColSelect(){ const cols=uniq(CLASES.map(c=>c.col)).sort();
-  $('dsel-col').innerHTML=opt("","Selecciona un colegio…")+cols.map(c=>opt(c,shortCol(c))).join(''); }
+function fillDashLoc(){ const l=uniq(CLASES.map(c=>c.loc)).sort();
+  $('dsel-loc').innerHTML=opt("","Selecciona localidad…")+l.map(x=>opt(x)).join(''); }
+function onDashLoc(){ const loc=$('dsel-loc').value;
+  const cols=uniq(CLASES.filter(c=>c.loc===loc).map(c=>c.col)).sort();
+  const s=$('dsel-col'); s.innerHTML=opt("","Selecciona colegio…")+cols.map(c=>opt(c,shortCol(c))).join('');
+  s.disabled=!loc; $('col-body').innerHTML=""; }
 function renderColegio(){
-  const col=$('dsel-col').value, body=$('col-body');
+  const col=$('dsel-col').value, loc=$('dsel-loc').value, body=$('col-body');
   if(!col){ body.innerHTML=""; return; }
-  const aulas=CLASES.filter(c=>c.col===col)
+  const aulas=CLASES.filter(c=>c.col===col && (!loc||c.loc===loc))
     .sort((a,b)=>String(a.aula||"").localeCompare(String(b.aula||""),'es',{numeric:true})||String(a.jor).localeCompare(String(b.jor)));
   let com=0,age=0,por=0; aulas.forEach(c=>c.ses.forEach(s=>{ s.e===2?com++:s.e===1?age++:por++; }));
-  let html=`<div class="kpis">
+  // encabezado del colegio: gestor(es) y contacto(s)
+  const gestSet=uniq(aulas.map(c=>c.ges).filter(Boolean));
+  const jorSet=uniq(aulas.map(c=>c.jor).filter(Boolean));
+  const contactos=uniq(aulas.map(c=>[c.con,c.rol,c.cel].filter(Boolean).join(" · ")).filter(Boolean));
+  const aulasTxt=uniq(aulas.map(c=>c.aula).filter(Boolean)).join(", ");
+  let html=`<div class="card">
+      <div class="schoolname">${shortCol(col)}</div>
+      <div class="schoolsub">${loc||(aulas[0]&&aulas[0].loc)||""} · ${jorSet.join(", ")}</div>
+      <div class="ginfo"><span>Gestor(es) AeR</span><b>${gestSet.join(" / ")||"—"}</b></div>
+      <div class="ginfo"><span>Aulas</span><b>${aulasTxt||"—"} (${aulas.length})</b></div>
+      ${contactos.map(ct=>`<div class="ginfo"><span>Contacto colegio</span><b>${ct}</b></div>`).join("")}
+    </div>
+    <div class="kpis">
       <div class="kpi c-com"><b>${com}</b><span>Completadas</span></div>
       <div class="kpi c-age"><b>${age}</b><span>Agendadas</span></div>
       <div class="kpi c-por"><b>${por}</b><span>Por agendar</span></div></div>
@@ -372,22 +410,35 @@ function renderColegio(){
 function renderGen(){
   let com=0,age=0,por=0; CLASES.forEach(c=>c.ses.forEach(s=>{ s.e===2?com++:s.e===1?age++:por++; }));
   $('k-com').textContent=com; $('k-age').textContent=age; $('k-por').textContent=por;
-  const cols=uniq(CLASES.map(c=>c.col)).sort();
-  $('gen-cols').innerHTML=cols.map(col=>stackRow(shortCol(col),CLASES.filter(c=>c.col===col))).join('');
-  const aulas=uniq(CLASES.map(c=>c.aula||"(sin aula)")).sort((a,b)=>a.localeCompare(b,'es',{numeric:true}));
-  $('gen-aulas').innerHTML=aulas.map(au=>stackRow(au,CLASES.filter(c=>(c.aula||"(sin aula)")===au))).join('');
+
+  // columnas = aulas existentes (Aula 1..N)
+  const aulas=uniq(CLASES.map(c=>c.aula).filter(Boolean)).sort((a,b)=>a.localeCompare(b,'es',{numeric:true}));
+  // filas = colegios, ordenados por localidad y nombre
+  const schools=uniq(CLASES.map(c=>c.col));
+  const meta=schools.map(col=>{ const any=CLASES.find(c=>c.col===col); return {col, loc:any?any.loc:""}; })
+    .sort((a,b)=> String(a.loc).localeCompare(String(b.loc),'es')||String(a.col).localeCompare(String(b.col),'es'));
+
+  let h=`<thead><tr><th class="lcol">Colegio</th>`+
+    aulas.map(a=>`<th>${a.replace(/Aula\s*/,'A')}</th>`).join('')+`</tr></thead><tbody>`;
+  meta.forEach(s=>{
+    h+=`<tr><td class="lcol"><b>${shortCol(s.col)}</b><span>${s.loc}</span></td>`;
+    aulas.forEach(a=>{
+      const cls=CLASES.filter(c=>c.col===s.col && c.aula===a);
+      if(!cls.length){ h+=`<td class="x">—</td>`; return; }
+      const done=cls.reduce((t,c)=>t+c.ses.filter(x=>x.e===2).length,0);
+      const tot=cls.length*NSES;
+      const cl=done===tot?'m4':(done>0?'mp':'m0');
+      h+=`<td class="${cl}">${done}/${tot}</td>`;
+    });
+    h+=`</tr>`;
+  });
+  h+=`</tbody>`;
+  $('gen-matrix').innerHTML=h;
+
   const late=[]; CLASES.forEach(c=>c.ses.forEach((s,i)=>{ if(s.e===1&&s.f&&s.f<HOY) late.push({c,i,f:s.f}); }));
   $('gen-alert').innerHTML=`<div class="ah">⚠ Sesiones agendadas vencidas (${late.length})</div>`+
-    (late.length? late.slice(0,30).map(x=>`<div class="ai"><b>${shortCol(x.c.col)}</b> · ${aulaLabel(x.c)} — Sesión ${x.i+1}, ${fmtFecha(x.f)}</div>`).join('')
+    (late.length? late.slice(0,40).map(x=>`<div class="ai"><b>${shortCol(x.c.col)}</b> · ${aulaLabel(x.c)} — Sesión ${x.i+1}, ${fmtFecha(x.f)}</div>`).join('')
       : `<div class="none">Ninguna sesión agendada está vencida.</div>`);
-}
-function stackRow(label,list){ let a=0,b=0,d=0,t=0;
-  list.forEach(c=>c.ses.forEach(s=>{ t++; s.e===2?a++:s.e===1?b++:d++; }));
-  const pc=t?Math.round(a/t*100):0;
-  return `<div class="grp"><div class="gh"><span>${label}</span><span>${pc}%</span></div>
-    <div class="stack"><i class="x-com" style="width:${t?a/t*100:0}%"></i>
-      <i class="x-age" style="width:${t?b/t*100:0}%"></i>
-      <i class="x-por" style="width:${t?d/t*100:0}%"></i></div></div>`;
 }
 
 /* ============ tabs + toast ============ */
