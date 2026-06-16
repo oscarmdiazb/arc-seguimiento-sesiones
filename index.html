@@ -272,7 +272,11 @@ let CLASES=[];
 const $=id=>document.getElementById(id);
 const uniq=a=>[...new Set(a)];
 const shortCol=s=>String(s||"").replace(/\s*\(IED\)/i,'').replace(/^COLEGIO\s+/i,'').trim();
-const estadoNum=t=>{const n=String(t||"").toLowerCase(); return n.indexOf("complet")>=0?2:n.indexOf("agenda")>=0?1:0;};
+const estadoNum=t=>{const n=String(t||"").toLowerCase();
+  if(n.indexOf("complet")>=0) return 2;          // Completada
+  if(n.indexOf("por agend")>=0) return 0;        // Por agendar  (chequear ANTES que "agenda")
+  if(n.indexOf("agenda")>=0) return 1;           // Agendada
+  return 0;};
 function fmtFecha(f){ if(!f) return "—"; const d=new Date(f+"T00:00"); return isNaN(d)?f:d.toLocaleDateString('es-CO',{weekday:'short',day:'numeric',month:'short'}); }
 function fmtCorta(f){ if(!f) return "—"; const d=new Date(f+"T00:00"); return isNaN(d)?f:d.toLocaleDateString('es-CO',{day:'numeric',month:'short'}); }
 function opt(v,t){ return `<option value="${v}">${(t!=null?t:v)}</option>`; }
