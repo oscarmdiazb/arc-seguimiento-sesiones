@@ -110,9 +110,14 @@
   .matrix th,.matrix td{border:1px solid var(--linea);padding:6px 8px;text-align:center;white-space:nowrap;}
   .matrix th{background:#f6f7fa;font-weight:800;color:var(--gris);font-size:11px;position:sticky;top:0;}
   .matrix th.lcol,.matrix td.lcol{text-align:left;}
-  .matrix td.lcol{white-space:normal;min-width:130px;max-width:180px;}
-  .matrix td.lcol b{font-weight:700;font-size:12.5px;}
-  .matrix td.lcol span{display:block;font-size:10px;color:var(--gris);font-weight:600;}
+  .matrix td.lcol{white-space:normal;min-width:150px;max-width:225px;vertical-align:top;}
+  .matrix td.lcol .cn{display:block;font-weight:700;font-size:12.5px;color:var(--tinta);line-height:1.2;}
+  .matrix td.lcol .eq{display:block;font-size:10px;color:var(--gris);font-weight:700;margin:2px 0 4px;}
+  .matrix td.lcol .adates{font-size:9.5px;color:var(--gris);font-weight:600;line-height:1.6;white-space:normal;}
+  .matrix td.lcol .adates b{color:var(--tinta);font-weight:800;margin-right:3px;}
+  .matrix td.lcol .adates .dd2{color:#1f9d57;font-weight:700;}
+  .matrix td.lcol .adates .dd1{color:#d98613;font-weight:700;}
+  .matrix td.lcol .adates .dd0{color:#c2c6cf;font-weight:600;}
   .matrix td.m4{background:#eaf7ef;color:var(--com);font-weight:800;}
   .matrix td.mp{background:#fdf1e3;color:#b9750f;font-weight:800;}
   .matrix td.m0{background:#f6f7fa;color:var(--gris);font-weight:700;}
@@ -221,6 +226,12 @@
         <span><i style="background:#f2c98a"></i>parcial</span>
         <span><i style="background:#dfe3ea"></i>sin iniciar</span>
         <span>— = sin aula</span>
+      </div>
+      <div class="legend" style="margin-top:4px;">
+        <span>Fechas:</span>
+        <span style="color:#1f9d57">completada</span>
+        <span style="color:#d98613">agendada</span>
+        <span style="color:#c2c6cf">– sin agendar</span>
       </div>
     </div>
     <div class="alert" id="gen-alert"></div>
@@ -430,7 +441,16 @@ function renderGen(){
       .sort((a,b)=>String(a).localeCompare(String(b),'es'));
     h+=`<tr class="locrow"><td colspan="${ncols}">${loc} · ${schools.length} colegio(s)</td></tr>`;
     schools.forEach(col=>{
-      h+=`<tr><td class="lcol"><b>${shortCol(col)}</b></td>`;
+      const scls=data.filter(c=>c.col===col)
+        .sort((x,y)=>String(x.aula||"").localeCompare(String(y.aula||""),'es',{numeric:true}));
+      const eq=uniq(scls.map(c=>c.ges).filter(Boolean)).join(" / ");
+      const lines=scls.map(c=>{
+        const ds=c.ses.map(s=> s.f
+          ? `<span class="dd${s.e}">${s.f.slice(8,10)}/${s.f.slice(5,7)}</span>`
+          : `<span class="dd0">–</span>`).join(" ");
+        return `<div class="adates"><b>${String(c.aula||"").replace(/Aula\s*/,'A')}</b> ${ds}</div>`;
+      }).join("");
+      h+=`<tr><td class="lcol"><span class="cn">${shortCol(col)}</span><span class="eq">${eq||"—"}</span>${lines}</td>`;
       aulas.forEach(a=>{
         const cls=data.filter(c=>c.col===col && c.aula===a);
         if(!cls.length){ h+=`<td class="x">—</td>`; return; }
