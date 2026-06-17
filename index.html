@@ -210,6 +210,8 @@
   <!-- GENERAL -->
   <div id="view-gen" class="hide">
     <div class="card">
+      <label class="fld">Filtrar por equipo</label>
+      <select id="gen-eq" onchange="onGenEquipo()"></select>
       <label class="fld">Filtrar por gestor(es)</label>
       <select id="gen-ges" onchange="renderGen()"></select>
     </div>
@@ -316,11 +318,20 @@ async function loadData(){
     CLASES = JSON.parse(JSON.stringify(DEMO)); afterLoad();
   }
 }
+function teamLabel(c){ return String(c.cod||"").toUpperCase().startsWith("AULAS")
+  ? "Aulas con Emoción" : "Promoción y Prevención"; }
+function fillGenGes(eq){
+  const gs=uniq(CLASES.filter(c=>!eq||teamLabel(c)===eq).map(c=>c.ges).filter(Boolean))
+    .sort((a,b)=>a.localeCompare(b,'es'));
+  $('gen-ges').innerHTML=opt("","Todos los gestores")+gs.map(g=>opt(g)).join('');
+}
+function onGenEquipo(){ fillGenGes($('gen-eq').value); renderGen(); }
 function afterLoad(){
   fillLoc(); fillDashLoc();
   const gs=gestores().sort((a,b)=>a.localeCompare(b,'es'));
   $('reg-name').innerHTML = opt("","Selecciona…")+gs.map(g=>opt(g)).join('');
-  $('gen-ges').innerHTML = opt("","Todos los gestores")+gs.map(g=>opt(g)).join('');
+  $('gen-eq').innerHTML = opt("","Todos los equipos")+opt("Promoción y Prevención")+opt("Aulas con Emoción");
+  fillGenGes("");
   if(!CONFIG.APPS_URL){ $('btn-save').textContent="Guardar (demo)"; }
 }
 
@@ -425,8 +436,10 @@ function renderColegio(){
 
 /* ============ GENERAL ============ */
 function renderGen(){
-  const gsel=$('gen-ges').value;
-  const data = gsel? CLASES.filter(c=>c.ges===gsel) : CLASES;
+  const eq=$('gen-eq').value, gsel=$('gen-ges').value;
+  let data = CLASES;
+  if(eq)   data = data.filter(c=>teamLabel(c)===eq);
+  if(gsel) data = data.filter(c=>c.ges===gsel);
 
   let com=0,age=0,por=0; data.forEach(c=>c.ses.forEach(s=>{ s.e===2?com++:s.e===1?age++:por++; }));
   $('k-com').textContent=com; $('k-age').textContent=age; $('k-por').textContent=por;
