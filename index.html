@@ -149,6 +149,25 @@
 
   .hide{display:none;}
   .muted{font-size:13px;color:var(--gris);font-weight:600;text-align:center;padding:20px 0;}
+  /* agregar aula */
+  .addbtn{width:100%;border:1.5px dashed var(--azul);background:#f4f8ff;color:var(--azul);font-family:inherit;
+    font-weight:800;font-size:14px;padding:12px;border-radius:13px;cursor:pointer;margin-bottom:14px;}
+  .modal{position:fixed;inset:0;background:rgba(20,20,40,.45);display:flex;align-items:flex-end;justify-content:center;z-index:20;}
+  .modal.hide{display:none;}
+  .modal-card{background:#fff;width:100%;max-width:460px;border-radius:18px 18px 0 0;max-height:92vh;display:flex;flex-direction:column;}
+  @media(min-width:480px){ .modal{align-items:center;} .modal-card{border-radius:18px;} }
+  .modal-h{display:flex;justify-content:space-between;align-items:center;padding:16px;border-bottom:1px solid var(--linea);font-weight:800;font-size:16px;}
+  .modal-h .mx{border:0;background:none;font-size:24px;line-height:1;color:var(--gris);cursor:pointer;}
+  .modal-b{padding:16px;overflow-y:auto;}
+  .modal-f{display:flex;gap:10px;padding:14px 16px;border-top:1px solid var(--linea);}
+  .btn.ghost{background:#eef0f5;color:var(--tinta);}
+  .row2{display:flex;gap:10px;} .row2 select{flex:1;}
+  .modal-b input{width:100%;font-family:inherit;font-size:15px;font-weight:600;color:var(--tinta);
+    border:1.5px solid var(--linea);border-radius:11px;padding:12px;}
+  .modal-b input:focus{outline:none;border-color:var(--azul);}
+  .a-msg{margin-top:12px;font-size:13px;font-weight:700;min-height:18px;}
+  .a-msg.err{color:var(--rojo);} .a-msg.ok{color:var(--com);}
+
   .toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%) translateY(20px);
     background:var(--tinta);color:#fff;font-weight:700;font-size:14px;padding:13px 20px;border-radius:12px;
     opacity:0;pointer-events:none;transition:.25s;z-index:9;text-align:center;max-width:90%;}
@@ -171,6 +190,7 @@
 
   <!-- REGISTRAR -->
   <div id="view-reg">
+    <button class="addbtn" onclick="openAdd()">➕ Agregar aula</button>
     <div class="card">
       <label class="fld">Localidad</label>
       <select id="sel-loc" onchange="onLoc()"></select>
@@ -239,6 +259,37 @@
     <div class="alert" id="gen-alert"></div>
   </div>
 </div>
+<!-- MODAL AGREGAR AULA -->
+<div id="addModal" class="modal hide">
+  <div class="modal-card">
+    <div class="modal-h"><span>➕ Agregar aula</span><button class="mx" onclick="closeAdd()">×</button></div>
+    <div class="modal-b">
+      <label class="fld">Localidad</label>
+      <select id="a-loc" onchange="aLoc()"></select>
+      <label class="fld">Colegio</label>
+      <select id="a-col" disabled onchange="aCol()"></select>
+      <label class="fld">Jornada</label>
+      <select id="a-jor"></select>
+      <label class="fld">Aula</label>
+      <select id="a-aula" disabled></select>
+      <label class="fld">Grado y grupo</label>
+      <div class="row2"><select id="a-grado"></select><select id="a-grupo"></select></div>
+      <label class="fld">Equipo</label>
+      <select id="a-eq"></select>
+      <label class="fld">Gestor(a) o equipo a cargo</label>
+      <input id="a-ges" list="ges-list" autocomplete="off" placeholder="Escribe o elige…">
+      <datalist id="ges-list"></datalist>
+      <label class="fld">Estudiantes <span style="font-weight:600;text-transform:none">(opcional)</span></label>
+      <input id="a-est" inputmode="numeric" autocomplete="off" placeholder="Nº de estudiantes">
+      <div id="a-msg" class="a-msg"></div>
+    </div>
+    <div class="modal-f">
+      <button class="btn ghost" onclick="closeAdd()">Cancelar</button>
+      <button class="btn save" id="a-submit" onclick="submitAula()">Agregar aula</button>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script>
@@ -388,6 +439,68 @@ function save(){
       .catch(()=>{ toast("Guardado local, pero falló el envío. Reintenta."); })
       .finally(()=>{ $('btn-save').disabled=false; });
   } else { toast(`Guardado · ${aulaLabel(cur)} (demo)`); }
+}
+
+/* ============ AGREGAR AULA (solo añadir, nunca borrar) ============ */
+const AULAS_POSIBLES=["Aula 1","Aula 2","Aula 3","Aula 4","Aula 5"];
+function openAdd(){
+  $('a-loc').innerHTML=opt("","Selecciona…")+uniq(CLASES.map(c=>c.loc)).sort().map(x=>opt(x)).join('');
+  $('a-col').innerHTML=opt("","—"); $('a-col').disabled=true;
+  $('a-jor').innerHTML=opt("","Selecciona…")+["Mañana","Tarde","Única"].map(x=>opt(x)).join('');
+  $('a-aula').innerHTML=opt("","Selecciona colegio primero"); $('a-aula').disabled=true;
+  $('a-grado').innerHTML=opt("","Grado")+[6,7,8,9,10,11].map(g=>opt(g)).join('');
+  $('a-grupo').innerHTML=opt("","Grupo")+["01","02","03","04","05","06","07","08","09","10","11","12"].map(g=>opt(g)).join('');
+  $('a-eq').innerHTML=opt("","Selecciona…")+["Promoción y Prevención","Aulas con Emoción"].map(x=>opt(x)).join('');
+  $('ges-list').innerHTML=gestores().sort((a,b)=>a.localeCompare(b,'es')).map(g=>`<option value="${g}"></option>`).join('');
+  $('a-ges').value=""; $('a-est').value=""; $('a-msg').textContent=""; $('a-msg').className='a-msg';
+  $('a-submit').disabled=false;
+  $('addModal').classList.remove('hide');
+}
+function closeAdd(){ $('addModal').classList.add('hide'); }
+function aLoc(){ const loc=$('a-loc').value;
+  const cols=uniq(CLASES.filter(c=>c.loc===loc).map(c=>c.col)).sort();
+  const s=$('a-col'); s.innerHTML=opt("","Selecciona…")+cols.map(c=>opt(c,shortCol(c))).join(''); s.disabled=!loc;
+  $('a-aula').innerHTML=opt("","Selecciona colegio primero"); $('a-aula').disabled=true; }
+function aCol(){ const col=$('a-col').value, s=$('a-aula');
+  if(!col){ s.innerHTML=opt("","Selecciona colegio primero"); s.disabled=true; return; }
+  const used=uniq(CLASES.filter(c=>c.col===col).map(c=>c.aula));
+  const rem=AULAS_POSIBLES.filter(a=>!used.includes(a));
+  if(!rem.length){ s.innerHTML=opt("","Este colegio ya tiene sus 5 aulas"); s.disabled=true; return; }
+  s.innerHTML=opt("","Selecciona…")+rem.map(a=>opt(a)).join(''); s.disabled=false; }
+function daneDe(col){ const c=CLASES.find(x=>x.col===col); return c? String(c.id).split('-')[0] : ""; }
+function submitAula(){
+  const loc=$('a-loc').value, col=$('a-col').value, jor=$('a-jor').value, aula=$('a-aula').value;
+  const grado=$('a-grado').value, grupo=$('a-grupo').value, eqp=$('a-eq').value;
+  const ges=$('a-ges').value.trim(), est=$('a-est').value.trim();
+  const msg=$('a-msg'); msg.className='a-msg';
+  if(!loc||!col||!jor||!aula||!grado||!grupo||!eqp||!ges){ msg.classList.add('err'); msg.textContent='Completa todos los campos.'; return; }
+  const curso=grado+grupo;
+  const dane=daneDe(col);
+  if(!dane){ msg.classList.add('err'); msg.textContent='No encontré el DANE de este colegio.'; return; }
+  const jorUp=jor.toUpperCase().replace("UNICA","ÚNICA").replace("MANANA","MAÑANA");
+  const class_id=dane+"-"+jorUp+"-"+curso;
+  if(CLASES.some(c=>c.id===class_id)){ msg.classList.add('err'); msg.textContent='Esa aula (curso '+curso+', '+jor+') ya está registrada.'; return; }
+  if(CLASES.some(c=>c.col===col && c.aula===aula)){ msg.classList.add('err'); msg.textContent=aula+' ya existe en este colegio.'; return; }
+  const codigo = eqp==="Aulas con Emoción" ? "AULAS" : "PYP";
+  const src=CLASES.find(c=>c.col===col && (c.con||c.cel));
+  const con=src?src.con:"", rol=src?src.rol:"", cel=src?src.cel:"";
+  const rec={id:class_id, ges, cod:codigo, loc, col, jor, curso, aula, est, con, rol, cel,
+    ses:Array.from({length:NSES},()=>({f:"",e:0}))};
+  $('a-submit').disabled=true; msg.textContent='Guardando…';
+  if(!CONFIG.APPS_URL){ addToMemory(rec); msg.className='a-msg ok'; msg.textContent='Aula agregada (demo).'; finishAdd(rec); return; }
+  const q=new URLSearchParams({accion:'addAula', dane, jornada:jor, curso, aula,
+    localidad:loc, colegio:col, gestor:ges, codigo, estudiantes:est, contacto:con, rol, celular:cel}).toString();
+  fetch(CONFIG.APPS_URL+(CONFIG.APPS_URL.indexOf('?')>=0?'&':'?')+q)
+    .then(r=>r.json())
+    .then(res=>{ if(res && res.ok){ addToMemory(rec); msg.className='a-msg ok'; msg.textContent='✓ Aula agregada.'; finishAdd(rec); }
+      else { msg.className='a-msg err'; msg.textContent=(res&&res.error)||'No se pudo agregar.'; $('a-submit').disabled=false; } })
+    .catch(()=>{ msg.className='a-msg err'; msg.textContent='Error de red. Reintenta.'; $('a-submit').disabled=false; });
+}
+function addToMemory(rec){ CLASES.push(rec); fillLoc(); fillDashLoc(); fillGenGes($('gen-eq').value||""); }
+function finishAdd(rec){ $('a-submit').disabled=false;
+  setTimeout(()=>{ closeAdd(); toast('Aula agregada · '+rec.aula+' · '+rec.curso);
+    $('sel-loc').value=rec.loc; onLoc(); $('sel-col').value=rec.col; onCol(); $('sel-aula').value=rec.id; onAula();
+  }, 800);
 }
 
 /* ============ POR COLEGIO ============ */
