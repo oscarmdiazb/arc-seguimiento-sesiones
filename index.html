@@ -152,6 +152,7 @@
   /* agregar aula */
   .addbtn{width:100%;border:1.5px dashed var(--azul);background:#f4f8ff;color:var(--azul);font-family:inherit;
     font-weight:800;font-size:14px;padding:12px;border-radius:13px;cursor:pointer;margin-bottom:14px;}
+  .addbtn:disabled{opacity:.5;cursor:default;border-color:var(--linea);color:var(--gris);background:#f6f7fa;}
   .modal{position:fixed;inset:0;background:rgba(20,20,40,.45);display:flex;align-items:flex-end;justify-content:center;z-index:20;}
   .modal.hide{display:none;}
   .modal-card{background:#fff;width:100%;max-width:460px;border-radius:18px 18px 0 0;max-height:92vh;display:flex;flex-direction:column;}
@@ -190,7 +191,7 @@
 
   <!-- REGISTRAR -->
   <div id="view-reg">
-    <button class="addbtn" onclick="openAdd()">➕ Agregar aula</button>
+    <button class="addbtn" id="addbtn" onclick="openAdd()" disabled>➕ Agregar aula</button>
     <div class="card">
       <label class="fld">Localidad</label>
       <select id="sel-loc" onchange="onLoc()"></select>
@@ -383,6 +384,7 @@ function afterLoad(){
   $('reg-name').innerHTML = opt("","Selecciona…")+gs.map(g=>opt(g)).join('');
   $('gen-eq').innerHTML = opt("","Todos los equipos")+opt("Promoción y Prevención")+opt("Aulas con Emoción");
   fillGenGes("");
+  $('addbtn').disabled = false;   // habilita "Agregar aula" solo cuando ya hay datos
   if(!CONFIG.APPS_URL){ $('btn-save').textContent="Guardar (demo)"; }
 }
 
@@ -444,6 +446,7 @@ function save(){
 /* ============ AGREGAR AULA (solo añadir, nunca borrar) ============ */
 const AULAS_POSIBLES=["Aula 1","Aula 2","Aula 3","Aula 4","Aula 5"];
 function openAdd(){
+  if(!CLASES.length){ toast("Aún se cargan los datos. Espera unos segundos e intenta de nuevo."); return; }
   $('a-loc').innerHTML=opt("","Selecciona…")+uniq(CLASES.map(c=>c.loc)).sort().map(x=>opt(x)).join('');
   $('a-col').innerHTML=opt("","—"); $('a-col').disabled=true;
   $('a-jor').innerHTML=opt("","Selecciona…")+["Mañana","Tarde","Única"].map(x=>opt(x)).join('');
