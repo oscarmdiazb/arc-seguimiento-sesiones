@@ -306,7 +306,7 @@ const CONFIG = {
 
 const NSES = 4;   // sesiones 1..4 (sin sesión 0). El índice 0 del arreglo = Sesión 1.
 const ESTADO_TXT = ["Por agendar","Agendada","Completada"];
-const HOY = new Date().toISOString().slice(0,10);
+const HOY = new Date().toLocaleDateString('en-CA',{timeZone:'America/Bogota'}); // hoy en Colombia (yyyy-mm-dd)
 
 /* ---- datos DEMO (se usan solo si CONFIG está vacío) ---- */
 const DEMO = [
