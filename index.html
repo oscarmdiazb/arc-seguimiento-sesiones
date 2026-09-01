@@ -180,6 +180,43 @@
   .spark .sb u{font-size:9.5px;font-weight:800;text-decoration:none;color:var(--tinta);}
   .spark .sb em{font-size:8.5px;font-style:normal;font-weight:700;color:var(--gris);white-space:nowrap;}
 
+  /* ===== QUÉ SIGUE (por aula) ===== */
+  .seg2{display:flex;gap:6px;background:#fff;border:1px solid var(--linea);border-radius:12px;padding:4px;margin-bottom:14px;}
+  .seg2 button{flex:1;border:0;background:none;font-family:inherit;font-weight:800;font-size:12.5px;color:var(--gris);
+    padding:9px 4px;border-radius:9px;cursor:pointer;}
+  .seg2 button.on{background:#eef0f5;color:var(--tinta);}
+
+  .qchips{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:14px;}
+  .qchip{flex:1;min-width:60px;border:1px solid var(--linea);background:#fff;border-radius:12px;padding:9px 3px;
+    text-align:center;cursor:pointer;font-family:inherit;}
+  .qchip b{display:block;font-size:19px;font-weight:800;line-height:1.1;}
+  .qchip span{font-size:8.5px;font-weight:800;color:var(--gris);text-transform:uppercase;letter-spacing:0;line-height:1.2;}
+  .qchip.on{border-color:var(--tinta);box-shadow:0 0 0 1.5px var(--tinta) inset;}
+  .qchip.q-late b{color:var(--rojo);} .qchip.q-soon b{color:var(--age);}
+  .qchip.q-nod b{color:#b9750f;} .qchip.q-fut b{color:var(--azul);} .qchip.q-fin b{color:var(--com);}
+
+  .qgroup{margin-bottom:6px;}
+  .qgh{display:flex;align-items:center;gap:7px;font-size:12px;font-weight:800;color:var(--gris);
+    text-transform:uppercase;letter-spacing:.03em;margin:14px 0 8px;}
+  .qgh i{width:10px;height:10px;border-radius:3px;flex:none;}
+
+  .qcard{border:1px solid var(--linea);border-left-width:4px;border-radius:12px;padding:11px 12px;margin-bottom:9px;
+    background:#fff;cursor:pointer;}
+  .qcard:active{background:#f8f9fc;}
+  .qcard.b-late{border-left-color:var(--rojo);} .qcard.b-soon{border-left-color:var(--age);}
+  .qcard.b-nod{border-left-color:#e0b25a;} .qcard.b-fut{border-left-color:var(--azul);}
+  .qcard.b-fin{border-left-color:var(--com);}
+  .qcard .qn{font-weight:800;font-size:13.5px;line-height:1.2;}
+  .qcard .qs{font-size:11px;color:var(--gris);font-weight:700;margin:2px 0 8px;}
+  .qcard .qrow{display:flex;justify-content:space-between;align-items:center;gap:9px;}
+  .qcard .qnext{font-size:12.5px;font-weight:800;}
+  .qcard .qnext em{font-style:normal;font-weight:700;color:var(--gris);}
+  .qdots{display:flex;gap:4px;flex:none;}
+  .qdots i{width:15px;height:15px;border-radius:5px;background:#e9ebf2;display:flex;align-items:center;
+    justify-content:center;font-size:9px;font-weight:800;color:#a6acb8;font-style:normal;}
+  .qdots i.d2{background:var(--com);color:#fff;} .qdots i.d1{background:var(--age);color:#fff;}
+  .qdots i.nx{box-shadow:0 0 0 2px var(--tinta);}
+
   .hide{display:none;}
   .muted{font-size:13px;color:var(--gris);font-weight:600;text-align:center;padding:20px 0;}
   /* agregar aula */
@@ -199,6 +236,9 @@
   .modal-b input{width:100%;font-family:inherit;font-size:15px;font-weight:600;color:var(--tinta);
     border:1.5px solid var(--linea);border-radius:11px;padding:12px;}
   .modal-b input:focus{outline:none;border-color:var(--azul);}
+  .card input[type=text],#q-txt{width:100%;font-family:inherit;font-size:15px;font-weight:600;color:var(--tinta);
+    border:1.5px solid var(--linea);border-radius:11px;padding:12px;background:#fff;}
+  #q-txt:focus{outline:none;border-color:var(--azul);}
   .a-msg{margin-top:12px;font-size:13px;font-weight:700;min-height:18px;}
   .a-msg.err{color:var(--rojo);} .a-msg.ok{color:var(--com);}
 
@@ -296,6 +336,12 @@
 
   <!-- PROGRESO -->
   <div id="view-pro" class="hide">
+    <div class="seg2">
+      <button id="sub-eq" class="on" onclick="setSub('eq')">Por equipo</button>
+      <button id="sub-au" onclick="setSub('au')">Qué sigue · por aula</button>
+    </div>
+
+  <div id="pro-sub-eq">
     <div class="card">
       <label class="fld">Equipo</label>
       <select id="pro-eq" onchange="renderProg()"></select>
@@ -341,6 +387,24 @@
       <div id="p-rank"></div>
     </div>
   </div>
+
+  <!-- QUÉ SIGUE · POR AULA -->
+  <div id="pro-sub-au" class="hide">
+    <div class="card">
+      <label class="fld">Buscar colegio, curso o gestor</label>
+      <input id="q-txt" oninput="renderQue()" autocomplete="off" placeholder="Escribe para filtrar…">
+      <label class="fld">Localidad</label>
+      <select id="q-loc" onchange="renderQue()"></select>
+      <label class="fld">Equipo</label>
+      <select id="q-eq" onchange="fillQGes();renderQue()"></select>
+      <label class="fld">Gestor(a) a cargo</label>
+      <select id="q-ges" onchange="renderQue()"></select>
+    </div>
+
+    <div class="qchips" id="q-chips"></div>
+    <div id="q-body"></div>
+  </div>
+</div>
 </div>
 <!-- MODAL AGREGAR AULA -->
 <div id="addModal" class="modal hide">
@@ -467,6 +531,10 @@ function afterLoad(){
   $('gen-eq').innerHTML = opt("","Todos los equipos")+opt("Promoción y Prevención")+opt("Aulas con Emoción");
   fillGenGes("");
   $('pro-eq').innerHTML = opt("","Todos los equipos")+opt("Promoción y Prevención")+opt("Aulas con Emoción");
+  $('q-eq').innerHTML  = opt("","Todos los equipos")+opt("Promoción y Prevención")+opt("Aulas con Emoción");
+  const qls=uniq(CLASES.map(c=>c.loc).filter(Boolean)).sort((a,b)=>String(a).localeCompare(String(b),'es'));
+  $('q-loc').innerHTML = opt("","Todas las localidades")+qls.map(x=>opt(x)).join('');
+  fillQGes();
   $('addbtn').disabled = false;   // habilita "Agregar aula" solo cuando ya hay datos
   if(!CONFIG.APPS_URL){ $('btn-save').textContent="Guardar (demo)"; }
 }
@@ -778,6 +846,120 @@ function renderProg(){
   }).join('');
 }
 
+/* ============ QUÉ SIGUE · POR AULA ============ */
+let Q_FILTRO = "";   // "" = todas | late | soon | nod | fut | fin
+
+const Q_META = {
+  late:{t:"Atrasadas · fecha vencida", c:"var(--rojo)",  b:"b-late"},
+  soon:{t:"Esta semana",               c:"var(--age)",   b:"b-soon"},
+  nod: {t:"Falta agendar",             c:"#e0b25a",      b:"b-nod"},
+  fut: {t:"Agendadas más adelante",    c:"var(--azul)",  b:"b-fut"},
+  fin: {t:"Terminadas · 4 de 4",       c:"var(--com)",   b:"b-fin"}
+};
+
+function diasEntre(a,b){ return Math.round((new Date(b+"T00:00")-new Date(a+"T00:00"))/86400000); }
+
+/* Para un aula: cuál es la sesión que sigue y en qué situación está. */
+function queSigue(c){
+  const hechas = c.ses.filter(s=>s.e===2).length;
+  let i = c.ses.findIndex(s=>s.e!==2);          // primera sesión no completada
+  if(i<0) return {grupo:"fin", hechas, i:-1, texto:"Todas las sesiones completadas", dias:null};
+  const s = c.ses[i];
+  if(s.e===1 && s.f){
+    const d = diasEntre(HOY, s.f);
+    if(d < 0)  return {grupo:"late", hechas, i, texto:"Sesión "+(i+1)+" · "+fmtCorta(s.f), dias:d};
+    if(d <= 7) return {grupo:"soon", hechas, i, texto:"Sesión "+(i+1)+" · "+fmtCorta(s.f), dias:d};
+    return {grupo:"fut", hechas, i, texto:"Sesión "+(i+1)+" · "+fmtCorta(s.f), dias:d};
+  }
+  return {grupo:"nod", hechas, i, texto:"Sesión "+(i+1)+" · sin fecha", dias:null};
+}
+function textoDias(d){
+  if(d===null) return "por agendar";
+  if(d<0)  return "hace "+(-d)+" día"+(-d===1?"":"s");
+  if(d===0) return "hoy";
+  if(d===1) return "mañana";
+  return "en "+d+" días";
+}
+
+function fillQGes(){
+  const eq=$('q-eq').value;
+  const gs=uniq(CLASES.filter(c=>!eq||teamLabel(c)===eq).map(c=>c.ges).filter(Boolean))
+    .sort((a,b)=>a.localeCompare(b,'es'));
+  $('q-ges').innerHTML=opt("","Todos los gestores")+gs.map(g=>opt(g)).join('');
+}
+function setQFiltro(g){ Q_FILTRO = (Q_FILTRO===g? "" : g); renderQue(); }
+
+function irARegistrar(id){
+  const c=CLASES.find(x=>x.id===id); if(!c) return;
+  setTab('reg');
+  $('sel-loc').value=c.loc; onLoc();
+  $('sel-col').value=c.col; onCol();
+  $('sel-aula').value=c.id; onAula();
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+function renderQue(){
+  const txt=($('q-txt').value||"").trim().toLowerCase();
+  const loc=$('q-loc').value, eq=$('q-eq').value, ges=$('q-ges').value;
+
+  let data=CLASES;
+  if(loc) data=data.filter(c=>c.loc===loc);
+  if(eq)  data=data.filter(c=>teamLabel(c)===eq);
+  if(ges) data=data.filter(c=>c.ges===ges);
+  if(txt) data=data.filter(c=>[c.col,c.curso,c.ges,c.aula,c.loc,c.cod]
+    .map(x=>String(x||"").toLowerCase()).join(" ").indexOf(txt)>=0);
+
+  const items=data.map(c=>Object.assign({c}, queSigue(c)));
+  const cuenta={late:0,soon:0,nod:0,fut:0,fin:0};
+  items.forEach(x=>cuenta[x.grupo]++);
+
+  /* chips-contador (también sirven de filtro) */
+  const chip=(k,lab,cls)=>`<button class="qchip ${cls}${Q_FILTRO===k?' on':''}" onclick="setQFiltro('${k}')">`+
+    `<b>${cuenta[k]}</b><span>${lab}</span></button>`;
+  $('q-chips').innerHTML =
+    chip('late','Atrasadas','q-late')+chip('soon','Esta semana','q-soon')+
+    chip('nod','Sin agendar','q-nod')+chip('fut','Agendadas','q-fut')+chip('fin','Terminadas','q-fin');
+
+  /* orden dentro de cada grupo: lo más urgente primero */
+  const orden=(a,b)=>{
+    const fa=a.i>=0? (a.c.ses[a.i].f||"9999") : "9999";
+    const fb=b.i>=0? (b.c.ses[b.i].f||"9999") : "9999";
+    return fa.localeCompare(fb) || String(a.c.col).localeCompare(String(b.c.col),'es');
+  };
+
+  const grupos = Q_FILTRO? [Q_FILTRO] : ["late","soon","nod","fut","fin"];
+  let h="";
+  grupos.forEach(g=>{
+    const lista=items.filter(x=>x.grupo===g).sort(orden);
+    if(!lista.length) return;
+    const m=Q_META[g];
+    h+=`<div class="qgh"><i style="background:${m.c}"></i>${m.t} · ${lista.length}</div>`;
+    lista.forEach(x=>{
+      const c=x.c;
+      const dots=c.ses.map((s,j)=>`<i class="d${s.e}${j===x.i?' nx':''}">${j+1}</i>`).join('');
+      const sub=[c.loc, c.jor?("J. "+c.jor):"", c.ges].filter(Boolean).join(" · ");
+      h+=`<div class="qcard ${m.b}" onclick="irARegistrar('${c.id}')">
+        <div class="qn">${shortCol(c.col)} · ${aulaLabel(c)}</div>
+        <div class="qs">${sub}</div>
+        <div class="qrow">
+          <span class="qnext" style="color:${g==='fin'?'var(--com)':'var(--tinta)'}">${x.texto}
+            ${g==='fin'?'':`<em>· ${textoDias(x.dias)}</em>`}</span>
+          <span class="qdots">${dots}</span>
+        </div>
+      </div>`;
+    });
+  });
+  $('q-body').innerHTML = h || `<div class="muted">Ninguna aula coincide con el filtro.</div>`;
+}
+
+function setSub(v){
+  $('pro-sub-eq').classList.toggle('hide',v!=='eq');
+  $('pro-sub-au').classList.toggle('hide',v!=='au');
+  $('sub-eq').classList.toggle('on',v==='eq');
+  $('sub-au').classList.toggle('on',v==='au');
+  if(v==='eq') renderProg(); else renderQue();
+}
+
 /* ============ tabs + toast ============ */
 function setTab(t){
   $('view-reg').classList.toggle('hide',t!=='reg');
@@ -790,7 +972,7 @@ function setTab(t){
   $('tab-pro').classList.toggle('on',t==='pro');
   if(t==='col') renderColegio();
   if(t==='gen') renderGen();
-  if(t==='pro') renderProg();
+  if(t==='pro') setSub($('sub-au').classList.contains('on')?'au':'eq');
 }
 let toTimer;
 function toast(m){ const t=$('toast'); t.textContent=m; t.classList.add('show');
