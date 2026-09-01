@@ -147,6 +147,39 @@
   .alert .ai b{color:var(--tinta);}
   .alert .none{font-size:13px;color:var(--gris);font-weight:600;}
 
+  /* ===== PROGRESO (por equipo) ===== */
+  .phero{background:#fff;border:1px solid var(--linea);border-radius:16px;padding:16px;margin-bottom:14px;
+    box-shadow:0 1px 2px rgba(20,20,50,.04);}
+  .phero .pn{display:flex;align-items:baseline;gap:8px;}
+  .phero .pn b{font-size:40px;font-weight:800;line-height:1;color:var(--verde);}
+  .phero .pn span{font-size:13px;font-weight:700;color:var(--gris);}
+  .phero .plab{font-size:11px;font-weight:800;color:var(--gris);text-transform:uppercase;letter-spacing:.04em;margin:6px 0 10px;}
+  .psub{display:flex;gap:8px;margin-top:12px;}
+  .psub div{flex:1;background:#f8f9fc;border:1px solid var(--linea);border-radius:11px;padding:9px 4px;text-align:center;}
+  .psub b{display:block;font-size:19px;font-weight:800;line-height:1.1;}
+  .psub span{font-size:9.5px;font-weight:800;color:var(--gris);text-transform:uppercase;letter-spacing:.02em;}
+  .psub .g-ok b{color:var(--com);} .psub .g-mid b{color:var(--age);} .psub .g-off b{color:var(--por);}
+
+  .tcard{border:1px solid var(--linea);border-radius:14px;padding:12px;margin-bottom:10px;background:#fff;}
+  .tcard .th{display:flex;justify-content:space-between;align-items:baseline;gap:8px;}
+  .tcard .tn{font-weight:800;font-size:14px;line-height:1.15;}
+  .tcard .tp{font-weight:800;font-size:16px;white-space:nowrap;}
+  .tcard .tsub{font-size:11px;color:var(--gris);font-weight:700;margin:3px 0 8px;}
+  .tcard .rk{display:inline-block;background:#eef0f5;color:var(--gris);font-size:10px;font-weight:800;
+    border-radius:6px;padding:1px 6px;margin-right:6px;}
+  .chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:9px;}
+  .chip{font-size:10.5px;font-weight:800;padding:4px 8px;border-radius:999px;background:#f1f3f8;color:var(--gris);}
+  .chip.ok{background:#eaf7ef;color:#1f9d57;}
+  .chip.warn{background:#fdf1e3;color:#b9750f;}
+  .chip.bad{background:#fdecea;color:var(--rojo);}
+
+  .spark{display:flex;align-items:flex-end;gap:4px;height:78px;margin-top:8px;}
+  .spark .sb{flex:1;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;gap:3px;height:100%;}
+  .spark .sb i{display:block;width:100%;background:#bcd4f7;border-radius:4px 4px 0 0;min-height:2px;}
+  .spark .sb.now i{background:var(--azul);}
+  .spark .sb u{font-size:9.5px;font-weight:800;text-decoration:none;color:var(--tinta);}
+  .spark .sb em{font-size:8.5px;font-style:normal;font-weight:700;color:var(--gris);white-space:nowrap;}
+
   .hide{display:none;}
   .muted{font-size:13px;color:var(--gris);font-weight:600;text-align:center;padding:20px 0;}
   /* agregar aula */
@@ -184,9 +217,10 @@
   <div class="banner" id="banner"></div>
 
   <div class="tabs">
-    <button id="tab-reg" class="on" onclick="setTab('reg')">Registrar Acción</button>
-    <button id="tab-col" onclick="setTab('col')">Por colegio</button>
-    <button id="tab-gen" onclick="setTab('gen')">Por equipo</button>
+    <button id="tab-reg" class="on" onclick="setTab('reg')">Registrar</button>
+    <button id="tab-col" onclick="setTab('col')">Colegio</button>
+    <button id="tab-gen" onclick="setTab('gen')">Aulas</button>
+    <button id="tab-pro" onclick="setTab('pro')">Progreso</button>
   </div>
 
   <!-- REGISTRAR -->
@@ -258,6 +292,54 @@
       </div>
     </div>
     <div class="alert" id="gen-alert"></div>
+  </div>
+
+  <!-- PROGRESO -->
+  <div id="view-pro" class="hide">
+    <div class="card">
+      <label class="fld">Equipo</label>
+      <select id="pro-eq" onchange="renderProg()"></select>
+      <label class="fld">Ordenar por</label>
+      <select id="pro-sort" onchange="renderProg()">
+        <option value="pct">Mayor avance</option>
+        <option value="pctasc">Menor avance</option>
+        <option value="late">Sesiones vencidas</option>
+        <option value="name">Nombre</option>
+      </select>
+    </div>
+
+    <div class="phero">
+      <div class="plab">Avance de la implementación</div>
+      <div class="pn"><b id="p-pct">0%</b><span id="p-frac">0 de 0 sesiones</span></div>
+      <div class="stack" style="margin-top:10px;">
+        <i class="x-com" id="p-s2"></i><i class="x-age" id="p-s1"></i><i class="x-por" id="p-s0"></i>
+      </div>
+      <div class="legend">
+        <span><i style="background:#27ae60"></i>Completadas</span>
+        <span><i style="background:#f2994a"></i>Agendadas</span>
+        <span><i style="background:#9aa0ac"></i>Por agendar</span>
+      </div>
+      <div class="psub">
+        <div class="g-ok"><b id="p-fin">0</b><span>Aulas 4/4</span></div>
+        <div class="g-mid"><b id="p-cur">0</b><span>En curso</span></div>
+        <div class="g-off"><b id="p-zer">0</b><span>Sin iniciar</span></div>
+      </div>
+      <div class="psub">
+        <div><b id="p-week">0</b><span>Próx. 7 días</span></div>
+        <div><b id="p-late" style="color:var(--rojo)">0</b><span>Vencidas</span></div>
+        <div><b id="p-eta">—</b><span>Última sesión</span></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="dtitle">Ritmo · sesiones completadas por semana</div>
+      <div class="spark" id="p-spark"></div>
+    </div>
+
+    <div class="card">
+      <div class="dtitle" id="p-rank-title">Avance por equipo</div>
+      <div id="p-rank"></div>
+    </div>
   </div>
 </div>
 <!-- MODAL AGREGAR AULA -->
@@ -384,6 +466,7 @@ function afterLoad(){
   $('reg-name').innerHTML = opt("","Selecciona…")+gs.map(g=>opt(g)).join('');
   $('gen-eq').innerHTML = opt("","Todos los equipos")+opt("Promoción y Prevención")+opt("Aulas con Emoción");
   fillGenGes("");
+  $('pro-eq').innerHTML = opt("","Todos los equipos")+opt("Promoción y Prevención")+opt("Aulas con Emoción");
   $('addbtn').disabled = false;   // habilita "Agregar aula" solo cuando ya hay datos
   if(!CONFIG.APPS_URL){ $('btn-save').textContent="Guardar (demo)"; }
 }
@@ -604,16 +687,110 @@ function renderGen(){
       : `<div class="none">Ninguna sesión agendada está vencida.</div>`);
 }
 
+/* ============ PROGRESO (por equipo) ============ */
+function addDias(iso,n){ const d=new Date(iso+"T00:00"); d.setDate(d.getDate()+n);
+  return d.toLocaleDateString('en-CA'); }
+function lunesDe(iso){ const d=new Date(iso+"T00:00"); const dw=(d.getDay()+6)%7;  // 0 = lunes
+  d.setDate(d.getDate()-dw); return d.toLocaleDateString('en-CA'); }
+
+function statsDe(lista){
+  let com=0,age=0,por=0,fin=0,zer=0,late=0,prox=0;
+  let ultima="", proxima="";
+  const limite = addDias(HOY,7);
+  lista.forEach(c=>{
+    const d=c.ses.filter(s=>s.e===2).length;
+    if(d===NSES) fin++; else if(d===0 && !c.ses.some(s=>s.e===1)) zer++;
+    c.ses.forEach(s=>{
+      if(s.e===2){ com++; if(s.f && s.f>ultima) ultima=s.f; }
+      else if(s.e===1){ age++;
+        if(s.f && s.f<HOY) late++;
+        if(s.f && s.f>=HOY && s.f<=limite) prox++;
+        if(s.f && s.f>ultima) ultima=s.f;
+        if(s.f && s.f>=HOY && (!proxima || s.f<proxima)) proxima=s.f;
+      } else por++;
+    });
+  });
+  const tot=lista.length*NSES;
+  return {n:lista.length,com,age,por,tot,fin,zer,late,prox,ultima,proxima,
+          pct: tot? Math.round(com*100/tot) : 0};
+}
+
+function renderProg(){
+  const eq=$('pro-eq').value, orden=$('pro-sort').value;
+  const data = eq? CLASES.filter(c=>teamLabel(c)===eq) : CLASES;
+
+  /* --- resumen global --- */
+  const g=statsDe(data);
+  $('p-pct').textContent = g.pct+"%";
+  $('p-frac').textContent = g.com+" de "+g.tot+" sesiones · "+g.n+" aulas";
+  const w=t=>(g.tot? (t*100/g.tot) : 0)+"%";
+  $('p-s2').style.width=w(g.com); $('p-s1').style.width=w(g.age); $('p-s0').style.width=w(g.por);
+  $('p-fin').textContent=g.fin; $('p-cur').textContent=g.n-g.fin-g.zer; $('p-zer').textContent=g.zer;
+  $('p-week').textContent=g.prox; $('p-late').textContent=g.late;
+  $('p-eta').textContent = g.ultima? fmtCorta(g.ultima) : "—";
+
+  /* --- ritmo semanal: 8 semanas hasta hoy --- */
+  const porSem={};
+  data.forEach(c=>c.ses.forEach(s=>{ if(s.e===2 && s.f){ const l=lunesDe(s.f); porSem[l]=(porSem[l]||0)+1; }}));
+  const semanas=[]; const lunHoy=lunesDe(HOY);
+  for(let i=7;i>=0;i--) semanas.push(addDias(lunHoy,-7*i));
+  const maxv=Math.max(1,...semanas.map(x=>porSem[x]||0));
+  $('p-spark').innerHTML = semanas.map(x=>{
+    const v=porSem[x]||0, alto=Math.round(v*100/maxv);
+    return `<div class="sb${x===lunHoy?' now':''}"><u>${v||''}</u>`+
+           `<i style="height:${Math.max(alto,2)}%"></i><em>${x.slice(8,10)}/${x.slice(5,7)}</em></div>`;
+  }).join('');
+
+  /* --- ranking por equipo (dupla de gestores) --- */
+  const nombres=uniq(data.map(c=>c.ges).filter(Boolean));
+  let filas=nombres.map(nm=>{
+    const st=statsDe(data.filter(c=>c.ges===nm));
+    return Object.assign({nombre:nm},st);
+  });
+  const cmpNom=(a,b)=>b.n-a.n || a.nombre.localeCompare(b.nombre,'es');  // a igual avance, primero el equipo con más aulas
+  if(orden==='pct')    filas.sort((a,b)=>b.pct-a.pct || cmpNom(a,b));
+  if(orden==='pctasc') filas.sort((a,b)=>a.pct-b.pct || cmpNom(a,b));
+  if(orden==='late')   filas.sort((a,b)=>b.late-a.late || a.pct-b.pct || cmpNom(a,b));
+  if(orden==='name')   filas.sort((a,b)=>a.nombre.localeCompare(b.nombre,'es'));
+
+  $('p-rank-title').textContent = "Avance por equipo · "+filas.length+" equipo(s)";
+  if(!filas.length){ $('p-rank').innerHTML=`<div class="muted">Sin datos para este filtro.</div>`; return; }
+
+  const media=g.pct;
+  $('p-rank').innerHTML = filas.map((f,i)=>{
+    const pw=t=>(f.tot? (t*100/f.tot) : 0)+"%";
+    const color = f.pct>=media+10? 'var(--com)' : (f.pct<=media-10? 'var(--rojo)' : 'var(--tinta)');
+    const chips=[
+      `<span class="chip ${f.fin===f.n?'ok':''}">${f.fin}/${f.n} aulas 4/4</span>`,
+      f.late? `<span class="chip bad">⚠ ${f.late} vencida(s)</span>` : '',
+      f.prox? `<span class="chip warn">${f.prox} en 7 días</span>` : '',
+      f.zer?  `<span class="chip">${f.zer} sin iniciar</span>` : '',
+      f.proxima? `<span class="chip">Próxima: ${fmtCorta(f.proxima)}</span>` : ''
+    ].filter(Boolean).join('');
+    return `<div class="tcard">
+      <div class="th"><span class="tn"><span class="rk">${i+1}</span>${f.nombre}</span>
+        <span class="tp" style="color:${color}">${f.pct}%</span></div>
+      <div class="tsub">${f.com}/${f.tot} sesiones · ${f.n} aula(s)</div>
+      <div class="stack"><i class="x-com" style="width:${pw(f.com)}"></i>`+
+      `<i class="x-age" style="width:${pw(f.age)}"></i><i class="x-por" style="width:${pw(f.por)}"></i></div>
+      <div class="chips">${chips}</div>
+    </div>`;
+  }).join('');
+}
+
 /* ============ tabs + toast ============ */
 function setTab(t){
   $('view-reg').classList.toggle('hide',t!=='reg');
   $('view-col').classList.toggle('hide',t!=='col');
   $('view-gen').classList.toggle('hide',t!=='gen');
+  $('view-pro').classList.toggle('hide',t!=='pro');
   $('tab-reg').classList.toggle('on',t==='reg');
   $('tab-col').classList.toggle('on',t==='col');
   $('tab-gen').classList.toggle('on',t==='gen');
+  $('tab-pro').classList.toggle('on',t==='pro');
   if(t==='col') renderColegio();
   if(t==='gen') renderGen();
+  if(t==='pro') renderProg();
 }
 let toTimer;
 function toast(m){ const t=$('toast'); t.textContent=m; t.classList.add('show');
