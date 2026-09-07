@@ -239,6 +239,29 @@
   .card input[type=text],#q-txt{width:100%;font-family:inherit;font-size:15px;font-weight:600;color:var(--tinta);
     border:1.5px solid var(--linea);border-radius:11px;padding:12px;background:#fff;}
   #q-txt:focus{outline:none;border-color:var(--azul);}
+  /* ---- buscador de colegios ---- */
+  .bwrap{position:relative;}
+  .bwrap input{width:100%;font-family:inherit;font-size:15px;font-weight:600;color:var(--tinta);
+    border:1.5px solid var(--linea);border-radius:11px;padding:12px 36px 12px 34px;background:#fff;}
+  .bwrap input:focus{outline:none;border-color:var(--azul);}
+  .bwrap .bico{position:absolute;left:11px;top:50%;transform:translateY(-50%);font-size:14px;
+    color:var(--gris);pointer-events:none;}
+  .bwrap .bclr{position:absolute;right:5px;top:50%;transform:translateY(-50%);border:0;background:none;
+    font-family:inherit;font-size:20px;font-weight:700;color:var(--gris);cursor:pointer;padding:2px 8px;display:none;}
+  .bwrap .bclr.show{display:block;}
+  .bres{position:absolute;z-index:8;left:0;right:0;top:calc(100% + 5px);background:#fff;
+    border:1.5px solid var(--linea);border-radius:12px;box-shadow:0 8px 22px rgba(20,20,50,.14);
+    max-height:290px;overflow-y:auto;display:none;}
+  .bres.show{display:block;}
+  .bitem{padding:10px 12px;border-bottom:1px solid var(--linea);cursor:pointer;}
+  .bitem:last-child{border-bottom:0;}
+  .bitem:hover,.bitem.sel{background:#eef4ff;}
+  .bitem .bn{font-size:13.5px;font-weight:800;line-height:1.25;}
+  .bitem .bs{font-size:11.5px;font-weight:700;color:var(--gris);margin-top:2px;}
+  .bitem mark{background:#ffe9a8;color:inherit;border-radius:3px;padding:0 1px;}
+  .bnone{padding:12px;font-size:12.5px;font-weight:700;color:var(--gris);}
+  .bhint{font-size:11.5px;font-weight:700;color:var(--gris);margin-top:6px;}
+
   .a-msg{margin-top:12px;font-size:13px;font-weight:700;min-height:18px;}
   .a-msg.err{color:var(--rojo);} .a-msg.ok{color:var(--com);}
 
@@ -267,6 +290,16 @@
   <div id="view-reg">
     <button class="addbtn" id="addbtn" onclick="openAdd()" disabled>➕ Agregar aula</button>
     <div class="card">
+      <label class="fld">Buscar colegio</label>
+      <div class="bwrap">
+        <span class="bico">&#128269;</span>
+        <input id="b-reg" autocomplete="off" placeholder="Escribe el nombre del colegio…"
+               oninput="buscarCol('reg')" onfocus="buscarCol('reg')"
+               onblur="cerrarBusca('reg')" onkeydown="navBusca('reg',event)">
+        <button class="bclr" id="bc-reg" onclick="limpiarBusca('reg')" title="Limpiar">&times;</button>
+        <div class="bres" id="br-reg"></div>
+      </div>
+      <div class="bhint">Escribe y toca el colegio. Tambi&eacute;n puedes usar las listas de abajo.</div>
       <label class="fld">Localidad</label>
       <select id="sel-loc" onchange="onLoc()"></select>
       <label class="fld">Colegio</label>
@@ -294,6 +327,16 @@
   <!-- POR COLEGIO -->
   <div id="view-col" class="hide">
     <div class="card">
+      <label class="fld">Buscar colegio</label>
+      <div class="bwrap">
+        <span class="bico">&#128269;</span>
+        <input id="b-col" autocomplete="off" placeholder="Escribe el nombre del colegio…"
+               oninput="buscarCol('col')" onfocus="buscarCol('col')"
+               onblur="cerrarBusca('col')" onkeydown="navBusca('col',event)">
+        <button class="bclr" id="bc-col" onclick="limpiarBusca('col')" title="Limpiar">&times;</button>
+        <div class="bres" id="br-col"></div>
+      </div>
+      <div class="bhint">Escribe y toca el colegio. Tambi&eacute;n puedes usar las listas de abajo.</div>
       <label class="fld">Localidad</label>
       <select id="dsel-loc" onchange="onDashLoc()"></select>
       <label class="fld">Colegio</label>
@@ -305,6 +348,13 @@
   <!-- GENERAL -->
   <div id="view-gen" class="hide">
     <div class="card">
+      <label class="fld">Buscar colegio</label>
+      <div class="bwrap">
+        <span class="bico">&#128269;</span>
+        <input id="gen-txt" autocomplete="off" placeholder="Escribe el nombre del colegio…"
+               oninput="onGenTxt()">
+        <button class="bclr" id="bc-gen" onclick="limpiarGen()" title="Limpiar">&times;</button>
+      </div>
       <label class="fld">Filtrar por equipo</label>
       <select id="gen-eq" onchange="onGenEquipo()"></select>
       <label class="fld">Filtrar por gestor(es)</label>
@@ -539,12 +589,117 @@ function afterLoad(){
   if(!CONFIG.APPS_URL){ $('btn-save').textContent="Guardar (demo)"; }
 }
 
+
+/* ============ BUSCADOR DE COLEGIOS (Registrar / Colegio) ============ */
+let SYNC=false;                       // true mientras el buscador mueve los <select>
+const BUS = { reg:{sel:-1,hits:[]}, col:{sel:-1,hits:[]} };
+
+const nrm = s => String(s||"").normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
+const esc = s => String(s||"").replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+
+/* Un registro por colegio (colegio + localidad), con sus aulas y gestores. */
+function colegiosLista(){
+  const m={};
+  CLASES.forEach(c=>{
+    const k=String(c.loc)+"||"+String(c.col);
+    if(!m[k]) m[k]={col:c.col, loc:c.loc, n:0, ges:[], cods:[]};
+    m[k].n++;
+    if(c.ges && m[k].ges.indexOf(c.ges)<0) m[k].ges.push(c.ges);
+    if(c.cod && m[k].cods.indexOf(c.cod)<0) m[k].cods.push(c.cod);
+  });
+  return Object.keys(m).map(k=>m[k])
+    .sort((a,b)=>shortCol(a.col).localeCompare(shortCol(b.col),'es'));
+}
+
+/* Resalta en amarillo lo que el usuario escribió (sin tildes ni mayúsculas). */
+function resaltar(txt,toks){
+  txt=String(txt||""); const n=nrm(txt);
+  if(n.length!==txt.length) return esc(txt);
+  const on=new Array(txt.length).fill(false);
+  toks.forEach(t=>{ if(!t) return; let i=n.indexOf(t);
+    while(i>=0){ for(let k=i;k<i+t.length;k++) on[k]=true; i=n.indexOf(t,i+t.length); } });
+  let out="",abierto=false;
+  for(let k=0;k<txt.length;k++){
+    if(on[k]&&!abierto){ out+="<mark>"; abierto=true; }
+    if(!on[k]&&abierto){ out+="</mark>"; abierto=false; }
+    out+=esc(txt[k]);
+  }
+  return out+(abierto?"</mark>":"");
+}
+
+function buscarCol(key){
+  const b=BUS[key], inp=$('b-'+key), box=$('br-'+key);
+  const crudo=inp.value.trim(), q=nrm(crudo);
+  $('bc-'+key).classList.toggle('show', crudo.length>0);
+  if(!q){ box.classList.remove('show'); box.innerHTML=""; b.hits=[]; b.sel=-1; return; }
+  const toks=q.split(/\s+/).filter(Boolean);
+  const hits=colegiosLista().filter(e=>{
+    const heno=nrm([shortCol(e.col), e.col, e.loc, e.ges.join(" "), e.cods.join(" ")].join(" "));
+    return toks.every(t=>heno.indexOf(t)>=0);
+  }).slice(0,40);
+  b.hits=hits; b.sel=-1;
+  box.innerHTML = hits.length
+    ? hits.map((e,i)=>`<div class="bitem" data-i="${i}" onmousedown="pickCol('${key}',${i})">
+        <div class="bn">${resaltar(shortCol(e.col),toks)}</div>
+        <div class="bs">${resaltar(e.loc||"",toks)} · ${e.n} aula(s)${e.ges.length?" · "+resaltar(e.ges.join(" / "),toks):""}</div>
+      </div>`).join("")
+    : `<div class="bnone">Ningún colegio coincide con “${esc(crudo)}”.</div>`;
+  box.classList.add('show');
+}
+
+function pickCol(key,i){
+  const b=BUS[key], e=b.hits[i]; if(!e) return;
+  $('b-'+key).value = shortCol(e.col);
+  $('bc-'+key).classList.add('show');
+  $('br-'+key).classList.remove('show');
+  SYNC=true;
+  try{
+    if(key==='reg'){
+      $('sel-loc').value=e.loc; onLoc();
+      $('sel-col').value=e.col; onCol();
+      const aulas=CLASES.filter(c=>c.loc===e.loc&&c.col===e.col)
+        .sort((x,y)=>String(x.aula||"").localeCompare(String(y.aula||""),'es',{numeric:true}));
+      if(aulas.length===1){ $('sel-aula').value=aulas[0].id; onAula(); }
+    }else{
+      $('dsel-loc').value=e.loc; onDashLoc();
+      $('dsel-col').value=e.col; renderColegio();
+    }
+  } finally { SYNC=false; }
+}
+
+function navBusca(key,ev){
+  const b=BUS[key], box=$('br-'+key);
+  if(ev.key==='Escape'){ box.classList.remove('show'); return; }
+  if(!box.classList.contains('show') || !b.hits.length) return;
+  if(ev.key==='ArrowDown'||ev.key==='ArrowUp'){
+    ev.preventDefault();
+    b.sel = ev.key==='ArrowDown' ? Math.min(b.sel+1, b.hits.length-1) : Math.max(b.sel-1, 0);
+    const hijos=box.children;
+    for(let i=0;i<hijos.length;i++) hijos[i].classList.toggle('sel', i===b.sel);
+    if(hijos[b.sel] && hijos[b.sel].scrollIntoView) hijos[b.sel].scrollIntoView({block:'nearest'});
+  } else if(ev.key==='Enter'){
+    ev.preventDefault();
+    pickCol(key, b.sel>=0? b.sel : 0);
+  }
+}
+function limpiarBusca(key,callado){
+  $('b-'+key).value=""; $('br-'+key).classList.remove('show');
+  $('bc-'+key).classList.remove('show'); BUS[key].hits=[]; BUS[key].sel=-1;
+  if(!callado) $('b-'+key).focus();
+}
+function cerrarBusca(key){ setTimeout(()=>$('br-'+key).classList.remove('show'), 160); }
+
+/* ---- filtro de texto de la pestaña Aulas ---- */
+function onGenTxt(){ $('bc-gen').classList.toggle('show', $('gen-txt').value.trim().length>0); renderGen(); }
+function limpiarGen(){ $('gen-txt').value=""; $('bc-gen').classList.remove('show'); renderGen(); $('gen-txt').focus(); }
+
 /* ============ REGISTRAR ============ */
 let cur=null, draft=null;
 function fillLoc(){ const l=uniq(CLASES.map(c=>c.loc)).sort();
   $('sel-loc').innerHTML=opt("","Selecciona…")+l.map(x=>opt(x)).join(''); }
 function aulaLabelFull(c){ return [c.aula, c.jor?("Jornada "+c.jor):null, c.curso].filter(Boolean).join(" · "); }
-function onLoc(){ const loc=$('sel-loc').value;
+function onLoc(){ if(!SYNC) limpiarBusca('reg',true);
+  const loc=$('sel-loc').value;
   const cols=uniq(CLASES.filter(c=>c.loc===loc).map(c=>c.col)).sort();
   const s=$('sel-col'); s.innerHTML=opt("","Selecciona…")+cols.map(c=>opt(c,shortCol(c))).join(''); s.disabled=!loc;
   $('sel-aula').innerHTML=opt("","—"); $('sel-aula').disabled=true; clearDetail(); }
@@ -660,7 +815,8 @@ function finishAdd(rec){ $('a-submit').disabled=false;
 /* ============ POR COLEGIO ============ */
 function fillDashLoc(){ const l=uniq(CLASES.map(c=>c.loc)).sort();
   $('dsel-loc').innerHTML=opt("","Selecciona localidad…")+l.map(x=>opt(x)).join(''); }
-function onDashLoc(){ const loc=$('dsel-loc').value;
+function onDashLoc(){ if(!SYNC) limpiarBusca('col',true);
+  const loc=$('dsel-loc').value;
   const cols=uniq(CLASES.filter(c=>c.loc===loc).map(c=>c.col)).sort();
   const s=$('dsel-col'); s.innerHTML=opt("","Selecciona colegio…")+cols.map(c=>opt(c,shortCol(c))).join('');
   s.disabled=!loc; $('col-body').innerHTML=""; }
@@ -704,9 +860,13 @@ function renderColegio(){
 /* ============ GENERAL ============ */
 function renderGen(){
   const eq=$('gen-eq').value, gsel=$('gen-ges').value;
+  const txt=nrm(($('gen-txt')?$('gen-txt').value:"").trim());
   let data = CLASES;
   if(eq)   data = data.filter(c=>teamLabel(c)===eq);
   if(gsel) data = data.filter(c=>c.ges===gsel);
+  if(txt){ const toks=txt.split(/\s+/).filter(Boolean);
+    data = data.filter(c=>{ const heno=nrm([c.col,c.loc,c.ges,c.curso,c.aula,c.cod,c.jor].join(" "));
+      return toks.every(t=>heno.indexOf(t)>=0); }); }
 
   let com=0,age=0,por=0; data.forEach(c=>c.ses.forEach(s=>{ s.e===2?com++:s.e===1?age++:por++; }));
   $('k-com').textContent=com; $('k-age').textContent=age; $('k-por').textContent=por;
@@ -719,7 +879,7 @@ function renderGen(){
 
   let h=`<thead><tr><th class="lcol">Colegio</th>`+
     aulas.map(a=>`<th>${a.replace(/Aula\s*/,'A')}</th>`).join('')+`</tr></thead><tbody>`;
-  if(!data.length){ h+=`<tr><td colspan="${ncols}" style="padding:14px;color:var(--gris);">Sin colegios para este gestor.</td></tr>`; }
+  if(!data.length){ h+=`<tr><td colspan="${ncols}" style="padding:14px;color:var(--gris);">Ningún colegio coincide con los filtros.</td></tr>`; }
   locs.forEach(loc=>{
     const schools=uniq(data.filter(c=>c.loc===loc).map(c=>c.col))
       .sort((a,b)=>String(a).localeCompare(String(b),'es'));
@@ -892,9 +1052,12 @@ function setQFiltro(g){ Q_FILTRO = (Q_FILTRO===g? "" : g); renderQue(); }
 function irARegistrar(id){
   const c=CLASES.find(x=>x.id===id); if(!c) return;
   setTab('reg');
+  SYNC=true;
+  $('b-reg').value=shortCol(c.col); $('bc-reg').classList.add('show');
   $('sel-loc').value=c.loc; onLoc();
   $('sel-col').value=c.col; onCol();
   $('sel-aula').value=c.id; onAula();
+  SYNC=false;
   window.scrollTo({top:0,behavior:'smooth'});
 }
 
