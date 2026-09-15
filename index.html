@@ -217,6 +217,18 @@
   .qdots i.d2{background:var(--com);color:#fff;} .qdots i.d1{background:var(--age);color:#fff;}
   .qdots i.nx{box-shadow:0 0 0 2px var(--tinta);}
 
+  /* ===== RESPONSABLE POR SESIÓN ===== */
+  .ses .rlab{display:block;font-size:10.5px;font-weight:800;color:var(--gris);text-transform:uppercase;letter-spacing:.03em;margin:10px 0 4px;}
+  .ses input.rin,#r-bulk{width:100%;font-family:inherit;font-size:14px;font-weight:600;color:var(--tinta);
+    border:1.5px solid var(--linea);border-radius:10px;padding:10px 12px;background:#fff;}
+  .ses input.rin:focus,#r-bulk:focus{outline:none;border-color:var(--azul);}
+  .rbulk{background:#f8f9fc;}
+  .rbulk .rsub{font-size:11.5px;font-weight:600;color:var(--gris);margin:3px 0 9px;line-height:1.35;}
+  .rrow{display:flex;gap:8px;}
+  .rrow button{flex:none;border:0;background:var(--tinta);color:#fff;font-family:inherit;font-weight:800;font-size:13px;
+    padding:0 14px;border-radius:10px;cursor:pointer;}
+  .aula-resp{font-size:11px;font-weight:700;color:#b9750f;margin:-6px 0 9px;line-height:1.35;}
+
   /* ===== CALENDARIO (agenda de implementación) ===== */
   body.wide .app{max-width:1180px;}
   .calfil{display:grid;grid-template-columns:1fr;gap:0 12px;}
@@ -361,6 +373,7 @@
       </div>
     </div>
     <div id="sesiones" class="sesiones"></div>
+    <datalist id="resp-list"></datalist>
     <div class="card name-wrap" id="namewrap">
       <label class="fld">¿Quién registra?</label>
       <select id="reg-name"></select>
@@ -646,7 +659,8 @@ async function loadData(){
       byId[c.id]=c; return c;
     });
     (se||[]).forEach(r=>{ const c=byId[r.class_id]; const j=parseInt(r.sesion,10)-1;  // sesión 1..4 -> índice 0..3
-      if(c && j>=0 && j<NSES){ c.ses[j]={ f:String(r.fecha||"").slice(0,10), e:estadoNum(r.estado) }; }});
+      if(c && j>=0 && j<NSES){ c.ses[j]={ f:String(r.fecha||"").slice(0,10), e:estadoNum(r.estado),
+        r:String(r.updated_by||"").trim() }; }});   // r = responsable de ESA sesión (se guarda en updated_by)
     afterLoad();
   }catch(err){
     $('banner').textContent="No se pudo leer la hoja. Revisa la URL en CONFIG. ("+err+")";
@@ -801,12 +815,17 @@ function onCol(){ const loc=$('sel-loc').value, col=$('sel-col').value;
 function clearDetail(){ cur=null; draft=null;
   ['clsinfo','sesiones','namewrap','actions'].forEach(x=>$(x).classList.remove('show')); }
 function onAula(){ const id=$('sel-aula').value; cur=CLASES.find(c=>c.id===id)||null;
-  if(!cur){ clearDetail(); return; } draft=cur.ses.map(s=>({f:s.f,e:s.e})); renderClase(); }
+  if(!cur){ clearDetail(); return; } draft=cur.ses.map(s=>({f:s.f,e:s.e,r:s.r||cur.ges||""})); renderClase(); }
 function renderClase(){
   $('i-cur').textContent=cur.curso||"—"; $('i-ges').textContent=cur.ges||"—";
   $('i-est').textContent=cur.est||"—"; $('i-con').textContent=cur.con||"—";
   $('clsinfo').classList.add('show');
-  let html='';
+  $('resp-list').innerHTML=nombresResp().map(n=>`<option value="${escA(n)}"></option>`).join('');
+  let html=`<div class="ses rbulk"><div class="ti">¿Cambió la dupla o se fue alguien?</div>
+      <div class="rsub">Escribe el nuevo nombre y aplícalo a las sesiones que aún no están completadas.
+        También puedes cambiar el nombre en cada sesión.</div>
+      <div class="rrow"><input id="r-bulk" list="resp-list" autocomplete="off" placeholder="Nuevo responsable">
+        <button onclick="applyBulk()">Aplicar</button></div></div>`;
   for(let i=0;i<NSES;i++){ const s=draft[i];
     html+=`<div class="ses"><div class="hd"><div class="num">${i+1}</div><div class="ti">Sesión ${i+1}</div></div>
       <div class="seg">
@@ -814,30 +833,54 @@ function renderClase(){
         <button class="s-age ${s.e===1?'on':''}" onclick="setEstado(${i},1)">Agendada</button>
         <button class="s-com ${s.e===2?'on':''}" onclick="setEstado(${i},2)">Completada</button>
       </div>
-      <input type="date" value="${s.f}" ${s.e===0?'disabled':''} onchange="setFecha(${i},this.value)"></div>`;
+      <input type="date" value="${s.f}" ${s.e===0?'disabled':''} onchange="setFecha(${i},this.value)">
+      <label class="rlab">Responsable · ${s.e===2?'quién la hizo':'quién la hará'}</label>
+      <input class="rin" list="resp-list" autocomplete="off" value="${escA(s.r)}" placeholder="Nombre o dupla"
+             oninput="setResp(${i},this.value)"></div>`;
   }
   $('sesiones').innerHTML=html; $('sesiones').classList.add('show');
-  $('namewrap').classList.add('show'); $('actions').classList.add('show');
-  $('reg-name').value = gestores().includes(cur.ges)? cur.ges : "";
+  $('actions').classList.add('show');
   updateProg();
+}
+const escA = s => esc(s).replace(/"/g,'&quot;');
+/* nombres sugeridos: gestores de las aulas + responsables ya escritos en sesiones */
+function nombresResp(){
+  const n=[]; CLASES.forEach(c=>{ n.push(c.ges); c.ses.forEach(s=>n.push(s.r)); });
+  return uniq(n.map(x=>String(x||"").trim()).filter(Boolean)).sort((a,b)=>a.localeCompare(b,'es'));
 }
 function setEstado(i,e){ draft[i].e=e; if(e===0) draft[i].f=""; renderClase(); }
 function setFecha(i,v){ draft[i].f=v; }
+function setResp(i,v){ draft[i].r=v; }
+function applyBulk(){
+  const v=$('r-bulk').value.trim().replace(/\s+/g," ");
+  if(!v){ toast("Escribe el nombre del nuevo responsable"); $('r-bulk').focus(); return; }
+  let n=0; draft.forEach(s=>{ if(s.e!==2){ s.r=v; n++; } });
+  renderClase();
+  toast(n? `${v} quedó en ${n} sesión(es) pendiente(s). Toca Guardar.` : "Todas las sesiones están completadas");
+}
 function updateProg(){ const d=draft.filter(s=>s.e===2).length;
   $('i-bar').style.width=(d/NSES*100)+'%'; $('i-lbl').textContent=`${d}/${NSES} sesiones completadas`; }
-function save(){
-  const nm=$('reg-name').value;
-  if(!nm){ toast("Selecciona quién registra antes de guardar"); $('reg-name').focus(); return; }
-  const payload={ class_id:cur.id, updated_by:nm,
-    sesiones:draft.map((s,i)=>({sesion:i+1, fecha:s.f, estado:ESTADO_TXT[s.e]})) };
-  cur.ses=draft.map(s=>({f:s.f,e:s.e}));     // actualiza en memoria
-  if(CONFIG.APPS_URL){
-    $('btn-save').disabled=true;
-    fetch(CONFIG.APPS_URL,{method:"POST",mode:"no-cors",body:JSON.stringify(payload)})
-      .then(()=>{ toast(`Guardado · ${aulaLabel(cur)}`); })
-      .catch(()=>{ toast("Guardado local, pero falló el envío. Reintenta."); })
-      .finally(()=>{ $('btn-save').disabled=false; });
-  } else { toast(`Guardado · ${aulaLabel(cur)} (demo)`); }
+/* El backend escribe `updated_by` igual para todas las sesiones de un envío.
+   Para guardar un responsable distinto por sesión, se hace un envío por cada nombre. */
+async function save(){
+  const falta=draft.findIndex(s=>s.e!==0 && !String(s.r||"").trim());
+  if(falta>=0){ toast(`Escribe el responsable de la sesión ${falta+1}`); return; }
+  const cid=cur.id, label=aulaLabel(cur);
+  const ses=draft.map((s,i)=>({sesion:i+1, fecha:s.f, estado:ESTADO_TXT[s.e],
+    r:String(s.r||"").trim().replace(/\s+/g," ")}));
+  cur.ses=ses.map((s,i)=>({f:draft[i].f, e:draft[i].e, r:s.r}));     // actualiza en memoria
+  const grupos={};
+  ses.forEach(s=>{ (grupos[s.r]=grupos[s.r]||[]).push({sesion:s.sesion, fecha:s.fecha, estado:s.estado}); });
+  if(!CONFIG.APPS_URL){ toast(`Guardado · ${label} (demo)`); return; }
+  $('btn-save').disabled=true;
+  try{
+    for(const nm of Object.keys(grupos)){
+      await fetch(CONFIG.APPS_URL,{method:"POST",mode:"no-cors",
+        body:JSON.stringify({class_id:cid, updated_by:nm, sesiones:grupos[nm]})});
+    }
+    toast(`Guardado · ${label}`);
+  }catch(err){ toast("Guardado local, pero falló el envío. Reintenta."); }
+  finally{ $('btn-save').disabled=false; }
 }
 
 /* ============ AGREGAR AULA (solo añadir, nunca borrar) ============ */
@@ -939,6 +982,8 @@ function renderColegio(){
     html+=`<div class="aula-card">
       <div class="aula-hd"><span class="nm">${aulaLabel(c)}</span><span class="pc">${done}/${NSES}</span></div>
       <div class="aula-sub">${c.jor||""} · Gestor(a): ${c.ges||"—"}</div>
+      ${(()=>{ const o=c.ses.map((s,i)=>s.r&&s.r!==c.ges? `S${i+1}: ${esc(s.r)}` : "").filter(Boolean);
+        return o.length? `<div class="aula-resp">Otro responsable · ${o.join(" · ")}</div>` : ""; })()}
       <div class="cells">${cells}</div></div>`; });
   html+=`</div>`;
   const late=[]; aulas.forEach(c=>c.ses.forEach((s,i)=>{ if(s.e===1&&s.f&&s.f<HOY) late.push({c,i,f:s.f}); }));
@@ -1220,27 +1265,30 @@ const DIAS_SEM=["lun","mar","mié","jue","vie","sáb","dom"];
 const sinFecha = s => s.e!==2 && !s.f;              // sesión pendiente que no tiene fecha
 const vencida  = s => s.e===1 && s.f && s.f<HOY;    // agendada con fecha pasada, sin marcar completada
 
+const respDe = (c,s) => s.r || c.ges || "";          // responsable de la sesión (o el gestor del aula)
 function fillCGes(){
-  const eq=$('c-eq').value, prev=$('c-ges').value;
-  const gs=uniq(CLASES.filter(c=>!eq||teamLabel(c)===eq).map(c=>c.ges).filter(Boolean))
-    .sort((a,b)=>a.localeCompare(b,'es'));
-  $('c-ges').innerHTML=opt("","Todos los gestores")+gs.map(g=>opt(g)).join('');
+  const eq=$('c-eq').value, prev=$('c-ges').value, n=[];
+  CLASES.filter(c=>!eq||teamLabel(c)===eq).forEach(c=>{ n.push(c.ges); c.ses.forEach(s=>n.push(s.r)); });
+  const gs=uniq(n.map(x=>String(x||"").trim()).filter(Boolean)).sort((a,b)=>a.localeCompare(b,'es'));
+  $('c-ges').innerHTML=opt("","Todos los responsables")+gs.map(g=>opt(escA(g),esc(g))).join('');
   if(gs.includes(prev)) $('c-ges').value=prev;
 }
-/* aulas que pasan los filtros comunes (sirven al calendario y a "sin asignar") */
-function calData(){
+/* aulas que pasan los filtros comunes. El filtro de gestor se aplica por sesión:
+   en el calendario cuenta el responsable de cada sesión; en "sin asignar", el aula entra
+   si el nombre es su gestor o el responsable de alguna de sus sesiones. */
+function calData(porAula){
   const txt=nrm($('c-txt').value.trim()), eq=$('c-eq').value, ges=$('c-ges').value, loc=$('c-loc').value;
   let d=CLASES;
   if(eq)  d=d.filter(c=>teamLabel(c)===eq);
-  if(ges) d=d.filter(c=>c.ges===ges);
   if(loc) d=d.filter(c=>c.loc===loc);
+  if(ges && porAula) d=d.filter(c=>c.ges===ges || c.ses.some(s=>s.r===ges));
   if(txt){ const toks=txt.split(/\s+/).filter(Boolean);
-    d=d.filter(c=>{ const heno=nrm([c.col,c.loc,c.ges,c.curso,c.aula,c.cod,c.jor].join(" "));
+    d=d.filter(c=>{ const heno=nrm([c.col,c.loc,c.ges,c.curso,c.aula,c.cod,c.jor,c.ses.map(s=>s.r).join(" ")].join(" "));
       return toks.every(t=>heno.indexOf(t)>=0); }); }
   return d;
 }
 function renderCalAll(){
-  const n=sinAsignar(calData()).filter(x=>x.g!=='venc').length;
+  const n=sinAsignar(calData(true)).filter(x=>x.g!=='venc').length;
   $('c-nsin').textContent="· "+n;
   if(C_SUB==='cal') renderCal(); else renderSin();
 }
@@ -1270,13 +1318,14 @@ function evCard(x){
     <div class="et"><span class="sn">S${x.i+1}</span><span class="es">${et}</span></div>
     <div class="ec">${esc(shortCol(c.col))}</div>
     <div class="ea">${esc(aulaLabel(c))}${c.jor?' · '+esc(c.jor):''}${c.loc?' · '+esc(c.loc):''}</div>
-    <div class="eg">${esc(c.ges||'—')}</div></div>`;
+    <div class="eg">${esc(respDe(c,s)||'—')}</div></div>`;
 }
 
 function renderCal(){
-  const ev=[];
+  const ev=[], ges=$('c-ges').value;
   calData().forEach(c=>c.ses.forEach((s,i)=>{
     if(!s.f) return;
+    if(ges && respDe(c,s)!==ges) return;
     if(C_SHOW==='pend' && s.e===2) return;
     if(C_SHOW==='com'  && s.e!==2) return;
     ev.push({c,i,s});
@@ -1336,7 +1385,7 @@ function sinAsignar(data){
 }
 function setSFiltro(g){ S_FILTRO=(S_FILTRO===g? "" : g); renderSin(); }
 function renderSin(){
-  const items=sinAsignar(calData());
+  const items=sinAsignar(calData(true));
   const cuenta={cero:0,falta:0,venc:0}; items.forEach(x=>cuenta[x.g]++);
   const chip=(k,lab,cls)=>`<button class="qchip ${cls}${S_FILTRO===k?' on':''}" onclick="setSFiltro('${k}')">`+
     `<b>${cuenta[k]}</b><span>${lab}</span></button>`;
@@ -1367,7 +1416,7 @@ function renderSin(){
         <div class="qn">${esc(shortCol(c.col))} · ${esc(aulaLabel(c))}</div>
         <div class="qs">${sub}</div>
         <div class="qrow"><span class="qnext">${txt}</span><span class="qdots">${dots}</span></div>
-        <div class="qc">Gestor(a): <b>${esc(c.ges||'—')}</b>`+
+        <div class="qc">Responsable: <b>${esc(uniq((g==='venc'? x.venc : x.pend).map(p=>respDe(c,p.s))).join(' / ')||'—')}</b>`+
           ((contacto||tel)? `<br>Contacto: ${contacto}${tel?` · <a href="tel:${tel}" onclick="event.stopPropagation()">${tel}</a>`:''}` : '')+
         `</div></div>`;
     });
