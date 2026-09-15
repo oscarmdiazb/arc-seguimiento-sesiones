@@ -217,6 +217,51 @@
   .qdots i.d2{background:var(--com);color:#fff;} .qdots i.d1{background:var(--age);color:#fff;}
   .qdots i.nx{box-shadow:0 0 0 2px var(--tinta);}
 
+  /* ===== CALENDARIO (agenda de implementación) ===== */
+  body.wide .app{max-width:1180px;}
+  .calfil{display:grid;grid-template-columns:1fr;gap:0 12px;}
+  .calfil > div + div label.fld{margin-top:12px;}
+  @media(min-width:820px){ .calfil{grid-template-columns:repeat(4,1fr);} .calfil > div + div label.fld{margin-top:0;} }
+  .calbar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:6px;}
+  .calbar .calsum{flex:1;font-size:12.5px;font-weight:700;color:var(--gris);min-width:220px;}
+  .calbar .calsum b{color:var(--tinta);font-weight:800;}
+  .calbar .seg2{margin:0;flex:none;}
+  .calbar .seg2 button{flex:none;padding:8px 11px;}
+  .minibtn{border:1.5px solid var(--linea);background:#fff;font-family:inherit;font-weight:800;font-size:12.5px;
+    color:var(--tinta);padding:9px 12px;border-radius:10px;cursor:pointer;}
+  .minibtn.on{background:var(--tinta);border-color:var(--tinta);color:#fff;}
+  .wkh{display:flex;justify-content:space-between;align-items:baseline;gap:8px;font-size:13px;font-weight:800;margin:18px 0 7px;}
+  .wkh span:last-child{font-size:11.5px;color:var(--gris);font-weight:700;white-space:nowrap;}
+  .wkh.now span:first-child{color:var(--azul);}
+  .week{display:grid;grid-template-columns:1fr;gap:8px;}
+  @media(min-width:820px){ .week{grid-template-columns:repeat(var(--nd,5),minmax(0,1fr));} }
+  .day{background:#fff;border:1px solid var(--linea);border-radius:12px;padding:8px;min-height:74px;}
+  .day.pasado{background:#fafbfc;}
+  .day.hoy{border-color:var(--azul);box-shadow:0 0 0 1.5px var(--azul) inset;}
+  .day .dh{display:flex;justify-content:space-between;font-size:12px;font-weight:800;margin-bottom:6px;}
+  .day.hoy .dh span:first-child{color:var(--azul);}
+  .day .dh span:last-child{color:var(--gris);font-weight:700;}
+  @media(max-width:819px){ .day.vacio{min-height:0;padding:6px 9px;} .day.vacio .dh{margin:0;color:#b6bac4;} }
+  .ev{border:1px solid var(--linea);border-left:4px solid var(--age);border-radius:8px;padding:6px 7px;margin-bottom:6px;
+    cursor:pointer;background:#fff;}
+  .ev:hover{background:#f4f8ff;}
+  .ev.st2{border-left-color:var(--com);background:#f6fbf8;}
+  .ev.late{border-left-color:var(--rojo);background:#fff7f6;}
+  .ev .et{display:flex;align-items:center;gap:5px;margin-bottom:3px;}
+  .ev .sn{background:var(--tinta);color:#fff;font-size:10px;font-weight:800;border-radius:5px;padding:1px 5px;}
+  .ev .es{font-size:9.5px;font-weight:800;text-transform:uppercase;letter-spacing:.03em;color:#b9750f;}
+  .ev.st2 .es{color:#1f9d57;} .ev.late .es{color:var(--rojo);}
+  .ev .ec{font-size:12px;font-weight:800;line-height:1.2;}
+  .ev .ea{font-size:10.5px;font-weight:700;color:var(--gris);line-height:1.3;margin-top:1px;}
+  .ev .eg{font-size:10.5px;font-weight:800;color:var(--azul);margin-top:2px;}
+  .sagrid{display:grid;grid-template-columns:1fr;gap:9px;}
+  @media(min-width:820px){ .sagrid{grid-template-columns:repeat(auto-fill,minmax(320px,1fr));} }
+  .sagrid .qcard{margin-bottom:0;}
+  .qcard .qc{font-size:11.5px;font-weight:700;color:var(--gris);margin-top:8px;border-top:1px dashed var(--linea);padding-top:6px;line-height:1.5;}
+  .qcard .qc b{color:var(--tinta);}
+  .qcard .qc a{color:var(--azul);text-decoration:none;font-weight:800;}
+  body.wide .qchips{max-width:620px;}
+
   .hide{display:none;}
   .muted{font-size:13px;color:var(--gris);font-weight:600;text-align:center;padding:20px 0;}
   /* agregar aula */
@@ -284,6 +329,7 @@
     <button id="tab-col" onclick="setTab('col')">Colegio</button>
     <button id="tab-gen" onclick="setTab('gen')">Aulas</button>
     <button id="tab-pro" onclick="setTab('pro')">Progreso</button>
+    <button id="tab-cal" onclick="setTab('cal')">Calendario</button>
   </div>
 
   <!-- REGISTRAR -->
@@ -455,6 +501,48 @@
     <div id="q-body"></div>
   </div>
 </div>
+
+  <!-- CALENDARIO -->
+  <div id="view-cal" class="hide">
+    <div class="seg2" style="max-width:460px;">
+      <button id="csub-cal" class="on" onclick="setCalSub('cal')">Calendario</button>
+      <button id="csub-sin" onclick="setCalSub('sin')">Aulas sin asignar <span id="c-nsin"></span></button>
+    </div>
+    <div class="card">
+      <div class="calfil">
+        <div><label class="fld">Buscar</label>
+          <input id="c-txt" type="text" oninput="renderCalAll()" autocomplete="off" placeholder="Colegio, curso o gestor…"></div>
+        <div><label class="fld">Equipo</label><select id="c-eq" onchange="fillCGes();renderCalAll()"></select></div>
+        <div><label class="fld">Gestor(a)</label><select id="c-ges" onchange="renderCalAll()"></select></div>
+        <div><label class="fld">Localidad</label><select id="c-loc" onchange="renderCalAll()"></select></div>
+      </div>
+    </div>
+
+    <div id="cal-sub-cal">
+      <div class="calbar">
+        <div class="calsum" id="c-sum"></div>
+        <div class="seg2" id="c-show">
+          <button class="on" data-v="" onclick="setCShow('')">Todas</button>
+          <button data-v="pend" onclick="setCShow('pend')">Agendadas</button>
+          <button data-v="com" onclick="setCShow('com')">Completadas</button>
+        </div>
+        <button class="minibtn" id="c-past" onclick="togglePast()">Ver semanas anteriores</button>
+        <button class="minibtn" onclick="irHoy()">Ir a hoy</button>
+      </div>
+      <div class="legend">
+        <span><i style="background:#27ae60"></i>Completada</span>
+        <span><i style="background:#f2994a"></i>Agendada</span>
+        <span><i style="background:#e8554e"></i>Vencida (fecha pasada, sin marcar)</span>
+        <span>· Toca una sesión para abrirla en Registrar</span>
+      </div>
+      <div id="c-weeks"></div>
+    </div>
+
+    <div id="cal-sub-sin" class="hide">
+      <div class="qchips" id="s-chips"></div>
+      <div id="s-body"></div>
+    </div>
+  </div>
 </div>
 <!-- MODAL AGREGAR AULA -->
 <div id="addModal" class="modal hide">
@@ -585,6 +673,9 @@ function afterLoad(){
   const qls=uniq(CLASES.map(c=>c.loc).filter(Boolean)).sort((a,b)=>String(a).localeCompare(String(b),'es'));
   $('q-loc').innerHTML = opt("","Todas las localidades")+qls.map(x=>opt(x)).join('');
   fillQGes();
+  $('c-eq').innerHTML  = opt("","Todos los equipos")+opt("Promoción y Prevención")+opt("Aulas con Emoción");
+  $('c-loc').innerHTML = opt("","Todas las localidades")+qls.map(x=>opt(x)).join('');
+  fillCGes();
   $('addbtn').disabled = false;   // habilita "Agregar aula" solo cuando ya hay datos
   if(!CONFIG.APPS_URL){ $('btn-save').textContent="Guardar (demo)"; }
 }
@@ -1123,19 +1214,179 @@ function setSub(v){
   if(v==='eq') renderProg(); else renderQue();
 }
 
+/* ============ CALENDARIO + AULAS SIN ASIGNAR ============ */
+let C_SUB="cal", C_SHOW="", C_PAST=false, S_FILTRO="";
+const DIAS_SEM=["lun","mar","mié","jue","vie","sáb","dom"];
+const sinFecha = s => s.e!==2 && !s.f;              // sesión pendiente que no tiene fecha
+const vencida  = s => s.e===1 && s.f && s.f<HOY;    // agendada con fecha pasada, sin marcar completada
+
+function fillCGes(){
+  const eq=$('c-eq').value, prev=$('c-ges').value;
+  const gs=uniq(CLASES.filter(c=>!eq||teamLabel(c)===eq).map(c=>c.ges).filter(Boolean))
+    .sort((a,b)=>a.localeCompare(b,'es'));
+  $('c-ges').innerHTML=opt("","Todos los gestores")+gs.map(g=>opt(g)).join('');
+  if(gs.includes(prev)) $('c-ges').value=prev;
+}
+/* aulas que pasan los filtros comunes (sirven al calendario y a "sin asignar") */
+function calData(){
+  const txt=nrm($('c-txt').value.trim()), eq=$('c-eq').value, ges=$('c-ges').value, loc=$('c-loc').value;
+  let d=CLASES;
+  if(eq)  d=d.filter(c=>teamLabel(c)===eq);
+  if(ges) d=d.filter(c=>c.ges===ges);
+  if(loc) d=d.filter(c=>c.loc===loc);
+  if(txt){ const toks=txt.split(/\s+/).filter(Boolean);
+    d=d.filter(c=>{ const heno=nrm([c.col,c.loc,c.ges,c.curso,c.aula,c.cod,c.jor].join(" "));
+      return toks.every(t=>heno.indexOf(t)>=0); }); }
+  return d;
+}
+function renderCalAll(){
+  const n=sinAsignar(calData()).filter(x=>x.g!=='venc').length;
+  $('c-nsin').textContent="· "+n;
+  if(C_SUB==='cal') renderCal(); else renderSin();
+}
+function setCalSub(v){
+  C_SUB=v;
+  $('cal-sub-cal').classList.toggle('hide',v!=='cal');
+  $('cal-sub-sin').classList.toggle('hide',v!=='sin');
+  $('csub-cal').classList.toggle('on',v==='cal');
+  $('csub-sin').classList.toggle('on',v==='sin');
+  renderCalAll();
+}
+function setCShow(v){ C_SHOW=v;
+  document.querySelectorAll('#c-show button').forEach(b=>b.classList.toggle('on',b.dataset.v===v)); renderCal(); }
+function togglePast(){ C_PAST=!C_PAST; $('c-past').classList.toggle('on',C_PAST);
+  $('c-past').textContent = C_PAST? "Ocultar semanas anteriores" : "Ver semanas anteriores"; renderCal(); }
+function irHoy(){ const el=document.querySelector('#c-weeks .day.hoy')||document.querySelector('#c-weeks .wkh.now');
+  if(el) el.scrollIntoView({behavior:'smooth',block:'center'}); }
+function fmtDia(f){ const d=new Date(f+"T00:00"); const k=(d.getDay()+6)%7;
+  return DIAS_SEM[k]+" "+d.getDate()+(d.getDate()===1? " "+d.toLocaleDateString('es-CO',{month:'short'}) : ""); }
+function fmtLargo(f){ return new Date(f+"T00:00").toLocaleDateString('es-CO',{day:'numeric',month:'long'}); }
+
+function evCard(x){
+  const c=x.c, s=x.s, late=vencida(s);
+  const cls = s.e===2? 'st2' : (late? 'late' : 'st1');
+  const et  = s.e===2? 'Completada' : (late? 'Vencida' : 'Agendada');
+  return `<div class="ev ${cls}" onclick="irARegistrar('${esc(c.id)}')" title="Abrir en Registrar">
+    <div class="et"><span class="sn">S${x.i+1}</span><span class="es">${et}</span></div>
+    <div class="ec">${esc(shortCol(c.col))}</div>
+    <div class="ea">${esc(aulaLabel(c))}${c.jor?' · '+esc(c.jor):''}${c.loc?' · '+esc(c.loc):''}</div>
+    <div class="eg">${esc(c.ges||'—')}</div></div>`;
+}
+
+function renderCal(){
+  const ev=[];
+  calData().forEach(c=>c.ses.forEach((s,i)=>{
+    if(!s.f) return;
+    if(C_SHOW==='pend' && s.e===2) return;
+    if(C_SHOW==='com'  && s.e!==2) return;
+    ev.push({c,i,s});
+  }));
+  const porDia={}; ev.forEach(x=>(porDia[x.s.f]=porDia[x.s.f]||[]).push(x));
+  const fechas=Object.keys(porDia).sort();
+  const lunHoy=lunesDe(HOY);
+  // por defecto: desde la semana pasada; con el botón, desde la primera sesión registrada
+  let ini = (C_PAST && fechas.length && fechas[0]<lunHoy)? lunesDe(fechas[0]) : addDias(lunHoy,-7);
+  let fin = fechas.length? lunesDe(fechas[fechas.length-1]) : lunHoy;
+  if(fin<addDias(lunHoy,14)) fin=addDias(lunHoy,14);
+
+  let prox=0, late=0, ocultas=0;
+  ev.forEach(x=>{ if(x.s.e===1 && x.s.f>=HOY) prox++; if(vencida(x.s)) late++; if(x.s.f<ini) ocultas++; });
+  $('c-sum').innerHTML = `<b>${prox}</b> agendadas desde hoy · <b style="color:var(--rojo)">${late}</b> vencidas`+
+    (ocultas? ` · ${ocultas} sesiones en semanas anteriores`:"");
+
+  let h="";
+  for(let lu=ini; lu<=fin; lu=addDias(lu,7)){
+    const dias=[]; for(let k=0;k<7;k++) dias.push(addDias(lu,k));
+    const vis = (porDia[dias[5]]||porDia[dias[6]])? dias : dias.slice(0,5);   // sáb/dom solo si hay sesiones
+    const nSem=dias.reduce((t,f)=>t+(porDia[f]||[]).length,0);
+    const nCom=dias.reduce((t,f)=>t+(porDia[f]||[]).filter(x=>x.s.e===2).length,0);
+    h+=`<div class="wkh${lu===lunHoy?' now':''}"><span>${lu===lunHoy?'Esta semana · ':''}Semana del ${fmtLargo(lu)}</span>`+
+       `<span>${nSem} sesi${nSem===1?'ón':'ones'}${nCom?` · ${nCom} completada${nCom===1?'':'s'}`:''}</span></div>`;
+    h+=`<div class="week" style="--nd:${vis.length}">`;
+    vis.forEach(f=>{
+      const lista=(porDia[f]||[]).sort((a,b)=>String(a.c.ges).localeCompare(String(b.c.ges),'es')
+        || shortCol(a.c.col).localeCompare(shortCol(b.c.col),'es') || a.i-b.i);
+      h+=`<div class="day${f===HOY?' hoy':''}${f<HOY?' pasado':''}${lista.length?'':' vacio'}">`+
+         `<div class="dh"><span>${f===HOY?'Hoy · ':''}${fmtDia(f)}</span><span>${lista.length||''}</span></div>`+
+         lista.map(evCard).join('')+`</div>`;
+    });
+    h+=`</div>`;
+  }
+  $('c-weeks').innerHTML=h;
+}
+
+/* Aulas sin asignar: sesiones pendientes que no tienen fecha (y, aparte, fechas vencidas) */
+const S_META = {
+  cero: {t:"Sin ninguna sesión agendada",          c:"var(--rojo)", b:"b-late"},
+  falta:{t:"Les faltan fechas",                    c:"#e0b25a",     b:"b-nod"},
+  venc: {t:"Fecha pasada · sin marcar completada", c:"var(--age)",  b:"b-soon"}
+};
+function sinAsignar(data){
+  const out=[];
+  data.forEach(c=>{
+    const idx=c.ses.map((s,i)=>({s,i}));
+    const pend=idx.filter(x=>sinFecha(x.s)), venc=idx.filter(x=>vencida(x.s));
+    let g=null;
+    if(c.ses.every(s=>s.e!==2 && !s.f)) g='cero';
+    else if(pend.length) g='falta';
+    else if(venc.length) g='venc';
+    if(g) out.push({c,g,pend,venc});
+  });
+  return out;
+}
+function setSFiltro(g){ S_FILTRO=(S_FILTRO===g? "" : g); renderSin(); }
+function renderSin(){
+  const items=sinAsignar(calData());
+  const cuenta={cero:0,falta:0,venc:0}; items.forEach(x=>cuenta[x.g]++);
+  const chip=(k,lab,cls)=>`<button class="qchip ${cls}${S_FILTRO===k?' on':''}" onclick="setSFiltro('${k}')">`+
+    `<b>${cuenta[k]}</b><span>${lab}</span></button>`;
+  $('s-chips').innerHTML=chip('cero','Sin ninguna fecha','q-late')+chip('falta','Faltan fechas','q-nod')+
+    chip('venc','Fecha vencida','q-soon');
+
+  const grupos=S_FILTRO? [S_FILTRO] : ['cero','falta','venc'];
+  let h="";
+  grupos.forEach(g=>{
+    const lista=items.filter(x=>x.g===g).sort((a,b)=>String(a.c.ges).localeCompare(String(b.c.ges),'es')
+      || shortCol(a.c.col).localeCompare(shortCol(b.c.col),'es'));
+    if(!lista.length) return;
+    const m=S_META[g];
+    h+=`<div class="qgh"><i style="background:${m.c}"></i>${m.t} · ${lista.length} aula${lista.length===1?'':'s'}</div><div class="sagrid">`;
+    lista.forEach(x=>{
+      const c=x.c;
+      const marca = g==='venc'? vencida : sinFecha;
+      const dots=c.ses.map((s,j)=>`<i class="d${s.e}${marca(s)?' nx':''}">${j+1}</i>`).join('');
+      const vtxt=x.venc.map(p=>'S'+(p.i+1)+' ('+fmtCorta(p.s.f)+')').join(', ');
+      let txt;
+      if(g==='cero')       txt='Agendar las '+NSES+' sesiones';
+      else if(g==='falta') txt='Sin fecha: '+x.pend.map(p=>'S'+(p.i+1)).join(', ')+(vtxt? ` <em>· vencida ${vtxt}</em>` : '');
+      else                 txt='Vencida: '+vtxt;
+      const tel=String(c.cel||'').replace(/\D/g,'');
+      const contacto=[c.con,c.rol].filter(Boolean).map(esc).join(' · ');
+      const sub=[c.loc, c.jor?'J. '+c.jor:'', c.est?c.est+' est.':''].filter(Boolean).map(esc).join(' · ');
+      h+=`<div class="qcard ${m.b}" onclick="irARegistrar('${esc(c.id)}')">
+        <div class="qn">${esc(shortCol(c.col))} · ${esc(aulaLabel(c))}</div>
+        <div class="qs">${sub}</div>
+        <div class="qrow"><span class="qnext">${txt}</span><span class="qdots">${dots}</span></div>
+        <div class="qc">Gestor(a): <b>${esc(c.ges||'—')}</b>`+
+          ((contacto||tel)? `<br>Contacto: ${contacto}${tel?` · <a href="tel:${tel}" onclick="event.stopPropagation()">${tel}</a>`:''}` : '')+
+        `</div></div>`;
+    });
+    h+=`</div>`;
+  });
+  $('s-body').innerHTML = h || `<div class="muted">Ninguna aula pendiente de fechas con este filtro.</div>`;
+}
+
 /* ============ tabs + toast ============ */
 function setTab(t){
-  $('view-reg').classList.toggle('hide',t!=='reg');
-  $('view-col').classList.toggle('hide',t!=='col');
-  $('view-gen').classList.toggle('hide',t!=='gen');
-  $('view-pro').classList.toggle('hide',t!=='pro');
-  $('tab-reg').classList.toggle('on',t==='reg');
-  $('tab-col').classList.toggle('on',t==='col');
-  $('tab-gen').classList.toggle('on',t==='gen');
-  $('tab-pro').classList.toggle('on',t==='pro');
+  ['reg','col','gen','pro','cal'].forEach(k=>{
+    $('view-'+k).classList.toggle('hide',t!==k);
+    $('tab-'+k).classList.toggle('on',t===k);
+  });
+  document.body.classList.toggle('wide', t==='cal');   // el calendario usa todo el ancho
   if(t==='col') renderColegio();
   if(t==='gen') renderGen();
   if(t==='pro') setSub($('sub-au').classList.contains('on')?'au':'eq');
+  if(t==='cal') setCalSub(C_SUB);
 }
 let toTimer;
 function toast(m){ const t=$('toast'); t.textContent=m; t.classList.add('show');
