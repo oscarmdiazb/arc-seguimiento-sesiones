@@ -652,7 +652,7 @@ async function loadData(){
     ]);
     const byId={};
     CLASES = (cl||[]).filter(r=>r.class_id).map(r=>{
-      const c={ id:r.class_id, ges:r.gestor, cod:r.codigo_aer, loc:r.localidad, col:r.colegio,
+      const c={ id:r.class_id, ges:limpiarNombre(r.gestor), cod:r.codigo_aer, loc:r.localidad, col:r.colegio,
         jor:r.jornada, curso:r.curso, aula:r.aula, est:r.estudiantes, con:r.contacto_colegio,
         rol:r.rol_contacto, cel:r.celular_contacto,
         ses:Array.from({length:NSES},()=>({f:"",e:0})) };
@@ -660,7 +660,8 @@ async function loadData(){
     });
     (se||[]).forEach(r=>{ const c=byId[r.class_id]; const j=parseInt(r.sesion,10)-1;  // sesión 1..4 -> índice 0..3
       if(c && j>=0 && j<NSES){ c.ses[j]={ f:String(r.fecha||"").slice(0,10), e:estadoNum(r.estado),
-        r:String(r.updated_by||"").trim() }; }});   // r = responsable de ESA sesión (se guarda en updated_by)
+        r:limpiarNombre(r.updated_by) }; }});   // r = responsable de ESA sesión (se guarda en updated_by)
+    unificarNombres();
     afterLoad();
   }catch(err){
     $('banner').textContent="No se pudo leer la hoja. Revisa la URL en CONFIG. ("+err+")";
@@ -843,6 +844,25 @@ function renderClase(){
   updateProg();
 }
 const escA = s => esc(s).replace(/"/g,'&quot;');
+/* Un mismo nombre llega escrito de varias formas ("Tania Moreno- Lizeth" / "Tania Moreno - Lizeth").
+   limpiarNombre arregla espacios y guiones; unificarNombres junta las variantes que solo difieren
+   en espacios, tildes o mayúsculas y usa la forma más frecuente. */
+function limpiarNombre(x){
+  const t=String(x||"").replace(/\s+/g," ").replace(/\s*-\s*/g," - ").trim();
+  return /\(reporte del gestor\)/i.test(t)? "" : t;     // "Oscar (reporte del gestor)" no es un responsable
+}
+function unificarNombres(){
+  const cuenta={};
+  const ver=n=>{ if(!n) return; const k=nrm(n); cuenta[k]=cuenta[k]||{}; cuenta[k][n]=(cuenta[k][n]||0)+1; };
+  CLASES.forEach(c=>{ ver(c.ges); c.ses.forEach(s=>ver(s.r)); });
+  const canon={};
+  Object.keys(cuenta).forEach(k=>{ canon[k]=Object.entries(cuenta[k]).sort((a,b)=>b[1]-a[1])[0][0]; });
+  CLASES.forEach(c=>{ if(c.ges) c.ges=canon[nrm(c.ges)];
+    c.ses.forEach(s=>{ if(s.r) s.r=canon[nrm(s.r)]; }); });
+}
+/* al guardar: si el nombre ya existe escrito de otra forma, se usa la forma existente */
+function nombreCanon(x){ const n=limpiarNombre(x), k=nrm(n);
+  return n? (nombresResp().find(y=>nrm(y)===k) || n) : ""; }
 /* nombres sugeridos: gestores de las aulas + responsables ya escritos en sesiones */
 function nombresResp(){
   const n=[]; CLASES.forEach(c=>{ n.push(c.ges); c.ses.forEach(s=>n.push(s.r)); });
@@ -852,7 +872,7 @@ function setEstado(i,e){ draft[i].e=e; if(e===0) draft[i].f=""; renderClase(); }
 function setFecha(i,v){ draft[i].f=v; }
 function setResp(i,v){ draft[i].r=v; }
 function applyBulk(){
-  const v=$('r-bulk').value.trim().replace(/\s+/g," ");
+  const v=nombreCanon($('r-bulk').value);
   if(!v){ toast("Escribe el nombre del nuevo responsable"); $('r-bulk').focus(); return; }
   let n=0; draft.forEach(s=>{ if(s.e!==2){ s.r=v; n++; } });
   renderClase();
@@ -867,7 +887,7 @@ async function save(){
   if(falta>=0){ toast(`Escribe el responsable de la sesión ${falta+1}`); return; }
   const cid=cur.id, label=aulaLabel(cur);
   const ses=draft.map((s,i)=>({sesion:i+1, fecha:s.f, estado:ESTADO_TXT[s.e],
-    r:String(s.r||"").trim().replace(/\s+/g," ")}));
+    r:nombreCanon(s.r)}));
   cur.ses=ses.map((s,i)=>({f:draft[i].f, e:draft[i].e, r:s.r}));     // actualiza en memoria
   const grupos={};
   ses.forEach(s=>{ (grupos[s.r]=grupos[s.r]||[]).push({sesion:s.sesion, fecha:s.fecha, estado:s.estado}); });
