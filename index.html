@@ -646,14 +646,24 @@
 
 <script>
 /* =====================================================================
-   CONFIGURACIÓN — pega aquí las URLs cuando tengas la hoja publicada.
-   Si quedan vacías, la página corre en MODO DEMO con datos de ejemplo.
+   CONFIGURACIÓN — backend en Supabase (proyecto oscar-apps).
+   La anon key es pública por diseño: las tablas tienen RLS sin políticas y la página solo puede
+   llamar a las funciones arc_get, arc_guardar y arc_agregar_aula
+   (~/oscar-personal-apps/supabase/migrations/20260916180000_arc_seguimiento_sesiones.sql).
+   Si SUPABASE_URL queda vacía, la página corre en MODO DEMO con datos de ejemplo.
    ===================================================================== */
 const CONFIG = {
-  // Pega aquí la URL /exec de tu app web (Apps Script). Una sola URL para leer y guardar.
-  // Si queda vacía, la página corre en MODO DEMO con datos de ejemplo.
-  APPS_URL: "https://script.google.com/macros/s/AKfycbxVytGYPYqdloofGCSdKmaAzs89HfHUPxpaShuA82ZW0KO91gPHQ1S49GToLgzjhFWZ/exec"
+  SUPABASE_URL: "https://sxfbzcnsbcvitaenwpct.supabase.co",
+  SUPABASE_ANON: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InN4ZmJ6Y25zYmN2aXRhZW53cGN0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODkxNTUzODksImV4cCI6MjEwNDczMTM4OX0.AwTQ4lNfFQXEOWUcgOcyI3QUxsYP7-GFo7zuPkHuOJM"
 };
+const HAY_BACKEND = !!CONFIG.SUPABASE_URL;
+function rpc(fn, params, post){
+  const h={apikey:CONFIG.SUPABASE_ANON, Authorization:"Bearer "+CONFIG.SUPABASE_ANON, "Content-Type":"application/json"};
+  const url=CONFIG.SUPABASE_URL+"/rest/v1/rpc/"+fn;
+  const req = post? fetch(url,{method:"POST",headers:h,body:JSON.stringify(params)})
+                  : fetch(url+"?"+new URLSearchParams(params),{headers:h});
+  return req.then(r=>{ if(!r.ok) throw new Error("HTTP "+r.status); return r.json(); });
+}
 
 const NSES = 4;   // sesiones 1..4 (sin sesión 0). El índice 0 del arreglo = Sesión 1.
 const ESTADO_TXT = ["Por agendar","Agendada","Completada"];
@@ -689,21 +699,16 @@ function gestores(){ return uniq(CLASES.map(c=>c.ges).filter(Boolean)); }
 function aulaLabel(c){ return (c.aula? c.aula+" · ":"")+ (c.curso||""); }
 
 /* ---------- carga de datos ---------- */
-function getJson(url){ return fetch(url).then(r=>r.json()); }
 
 async function loadData(){
-  if(!CONFIG.APPS_URL){             // modo demo
+  if(!HAY_BACKEND){                 // modo demo
     CLASES = JSON.parse(JSON.stringify(DEMO));
     $('banner').textContent="Modo demostración · datos de ejemplo. Conecta tu app web en CONFIG para usar datos reales.";
     $('banner').classList.add('show');
     afterLoad(); return;
   }
   try{
-    const base=CONFIG.APPS_URL;
-    const [cl,se] = await Promise.all([
-      getJson(base+(base.indexOf('?')>=0?'&':'?')+"tipo=clases"),
-      getJson(base+(base.indexOf('?')>=0?'&':'?')+"tipo=sesiones")
-    ]);
+    const [cl,se] = await Promise.all([ rpc("arc_get",{tipo:"clases"}), rpc("arc_get",{tipo:"sesiones"}) ]);
     const byId={};
     CLASES = (cl||[]).filter(r=>r.class_id).map(r=>{
       const c={ id:r.class_id, ges:r.gestor, cod:r.codigo_aer, loc:r.localidad, col:r.colegio,
@@ -718,9 +723,9 @@ async function loadData(){
     unificarNombres();
     afterLoad();
   }catch(err){
-    $('banner').textContent="No se pudo leer la hoja. Revisa la URL en CONFIG. ("+err+")";
+    $('banner').textContent="No se pudieron leer los datos. Revisa tu conexión y recarga la página. ("+err+")";
     $('banner').classList.add('show');
-    CLASES = JSON.parse(JSON.stringify(DEMO)); afterLoad();
+    CLASES = []; afterLoad();
   }
 }
 function teamLabel(c){ return String(c.cod||"").toUpperCase().startsWith("AULAS")
@@ -746,7 +751,7 @@ function afterLoad(){
   $('g-eq').innerHTML = opt("","Todos los equipos")+opt("Promoción y Prevención")+opt("Aulas con Emoción");
   fillGSel();
   $('addbtn').disabled = false;   // habilita "Agregar aula" solo cuando ya hay datos
-  if(!CONFIG.APPS_URL){ $('btn-save').textContent="Guardar (demo)"; }
+  if(!HAY_BACKEND){ $('btn-save').textContent="Guardar (demo)"; }
 }
 
 
@@ -902,7 +907,7 @@ const escA = s => esc(s).replace(/"/g,'&quot;');
    Cada nombre se parte en personas; cada persona se lleva a su nombre oficial (ALIAS_PERSONA y, para
    diferencias de tildes/mayúsculas, la forma más frecuente); y la dupla se escribe siempre igual:
    personas en orden alfabético separadas por " - ". Al guardar se escribe esa forma en la hoja. */
-const ALIAS_PERSONA = {"tania m":"Tania Moreno", "cony":"Conny", "vane":"Vanne"};
+const ALIAS_PERSONA = {"tania m":"Tania Moreno", "cony":"Conny", "vane":"Vanne", "laura":"Laura H"};
 let PERSONA_CANON = {};
 function personasDe(nombre){
   return uniq(String(nombre||"").replace(/\s+/g," ").split(/\s*-\s*|\s+y\s+|\s*[,\/+&]\s*/)
@@ -947,25 +952,20 @@ function applyBulk(){
 }
 function updateProg(){ const d=draft.filter(s=>s.e===2).length;
   $('i-bar').style.width=(d/NSES*100)+'%'; $('i-lbl').textContent=`${d}/${NSES} sesiones completadas`; }
-/* El backend escribe `updated_by` igual para todas las sesiones de un envío.
-   Para guardar gestores distintos por sesión, se hace un envío por cada dupla. */
+/* Un solo envío: cada sesión lleva sus propios gestores (updated_by). La respuesta confirma el guardado. */
 async function save(){
   const falta=draft.findIndex(s=>s.e!==0 && !s.p.length);
   if(falta>=0){ toast(`Elige el gestor(a) de la sesión ${falta+1}`); return; }
-  const cid=cur.id, label=aulaLabel(cur);
-  const ses=draft.map((s,i)=>({sesion:i+1, fecha:s.f, estado:ESTADO_TXT[s.e], r:duplaDe(s.p)}));
-  cur.ses=ses.map((s,i)=>({f:draft[i].f, e:draft[i].e, r:s.r}));     // actualiza en memoria
-  const grupos={};
-  ses.forEach(s=>{ (grupos[s.r]=grupos[s.r]||[]).push({sesion:s.sesion, fecha:s.fecha, estado:s.estado}); });
-  if(!CONFIG.APPS_URL){ toast(`Guardado · ${label} (demo)`); return; }
+  const aula=cur, label=aulaLabel(cur);
+  const ses=draft.map((s,i)=>({sesion:i+1, fecha:s.e===0? "" : s.f, estado:ESTADO_TXT[s.e], updated_by:duplaDe(s.p)}));
+  if(!HAY_BACKEND){ aula.ses=ses.map((s,i)=>({f:s.fecha, e:draft[i].e, r:s.updated_by})); toast(`Guardado · ${label} (demo)`); return; }
   $('btn-save').disabled=true;
   try{
-    for(const nm of Object.keys(grupos)){
-      await fetch(CONFIG.APPS_URL,{method:"POST",mode:"no-cors",
-        body:JSON.stringify({class_id:cid, updated_by:nm, sesiones:grupos[nm]})});
-    }
-    toast(`Guardado · ${label}`);
-  }catch(err){ toast("Guardado local, pero falló el envío. Reintenta."); }
+    const res=await rpc("arc_guardar",{body:{class_id:aula.id, sesiones:ses}},true);
+    if(!res || !res.ok) throw new Error((res&&res.error)||"sin respuesta");
+    aula.ses=ses.map((s,i)=>({f:s.fecha, e:draft[i].e, r:s.updated_by}));     // actualiza en memoria
+    toast(`✓ Guardado · ${label}`);
+  }catch(err){ toast("No se guardó ("+err.message+"). Revisa la conexión y toca Guardar otra vez."); }
   finally{ $('btn-save').disabled=false; }
 }
 
@@ -1016,11 +1016,9 @@ function submitAula(){
   const rec={id:class_id, ges, cod:codigo, loc, col, jor, curso, aula, est, con, rol, cel,
     ses:Array.from({length:NSES},()=>({f:"",e:0}))};
   $('a-submit').disabled=true; msg.textContent='Guardando…';
-  if(!CONFIG.APPS_URL){ addToMemory(rec); msg.className='a-msg ok'; msg.textContent='Aula agregada (demo).'; finishAdd(rec); return; }
-  const q=new URLSearchParams({accion:'addAula', dane, jornada:jor, curso, aula,
-    localidad:loc, colegio:col, gestor:ges, codigo, estudiantes:est, contacto:con, rol, celular:cel}).toString();
-  fetch(CONFIG.APPS_URL+(CONFIG.APPS_URL.indexOf('?')>=0?'&':'?')+q)
-    .then(r=>r.json())
+  if(!HAY_BACKEND){ addToMemory(rec); msg.className='a-msg ok'; msg.textContent='Aula agregada (demo).'; finishAdd(rec); return; }
+  rpc("arc_agregar_aula",{body:{dane, jornada:jor, curso, aula, localidad:loc, colegio:col,
+      gestor:duplaDe(personasDe(ges)), codigo, estudiantes:est, contacto:con, rol, celular:cel}},true)
     .then(res=>{ if(res && res.ok){ addToMemory(rec); msg.className='a-msg ok'; msg.textContent='✓ Aula agregada.'; finishAdd(rec); }
       else { msg.className='a-msg err'; msg.textContent=(res&&res.error)||'No se pudo agregar.'; $('a-submit').disabled=false; } })
     .catch(()=>{ msg.className='a-msg err'; msg.textContent='Error de red. Reintenta.'; $('a-submit').disabled=false; });
