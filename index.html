@@ -27,7 +27,7 @@
   .banner.show{display:block;}
 
   .tabs{display:flex;background:#fff;border:1px solid var(--linea);border-radius:12px;padding:4px;margin-bottom:16px;}
-  .tabs button{flex:1;border:0;background:none;font-family:inherit;font-weight:700;font-size:12.5px;color:var(--gris);
+  .tabs button{flex:1 1 auto;border:0;background:none;font-family:inherit;font-weight:700;font-size:12.5px;color:var(--gris);
     padding:9px 4px;border-radius:9px;cursor:pointer;}
   .tabs button.on{background:var(--tinta);color:#fff;}
 
@@ -217,6 +217,41 @@
   .qdots i.d2{background:var(--com);color:#fff;} .qdots i.d1{background:var(--age);color:#fff;}
   .qdots i.nx{box-shadow:0 0 0 2px var(--tinta);}
 
+  @media(max-width:480px){ .tabs button{font-size:11px;padding:9px 2px;} }
+  /* ===== GESTORES POR SESIÓN (selector de personas) ===== */
+  .pick{display:flex;flex-wrap:wrap;gap:6px;align-items:center;}
+  .pchip{border:1.5px solid var(--linea);background:#fff;font-family:inherit;font-weight:800;font-size:12.5px;color:var(--gris);
+    padding:7px 11px;border-radius:999px;cursor:pointer;}
+  .pchip.on{background:var(--azul);border-color:var(--azul);color:#fff;}
+  select.padd{width:auto;max-width:100%;font-size:12.5px;font-weight:800;padding:7px 30px 7px 11px;border-radius:999px;
+    border-style:dashed;color:var(--azul);background-position:right 8px center;}
+  .rbulk .rrow{margin-top:9px;}
+  .rbulk .rrow button{padding:10px 14px;}
+  /* ===== PESTAÑA GESTORES ===== */
+  .gtab{width:100%;border-collapse:collapse;font-size:12.5px;background:#fff;}
+  .gtab th{background:#f6f7fa;color:var(--gris);font-size:10.5px;font-weight:800;text-transform:uppercase;letter-spacing:.02em;
+    padding:7px 8px;text-align:right;white-space:nowrap;border-bottom:1px solid var(--linea);}
+  .gtab th:first-child,.gtab td:first-child{text-align:left;}
+  .gtab td{padding:8px;border-bottom:1px solid var(--linea);text-align:right;white-space:nowrap;font-weight:700;}
+  .gtab tr.gr{cursor:pointer;} .gtab tr.gr:hover td{background:#f4f8ff;}
+  .gtab td b{font-weight:800;} .gtab .gz{color:#c2c6cf;} .gtab .gred{color:var(--rojo);font-weight:800;}
+  .gtab td .gd{display:block;font-size:10.5px;color:var(--gris);font-weight:700;}
+  .gtab tr.gdone td{color:#9aa0ac;}
+  .ghead{font-weight:800;font-size:19px;line-height:1.1;}
+  .gsub{font-size:12px;color:var(--gris);font-weight:700;margin-top:4px;line-height:1.4;}
+  .gkpis{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:14px;}
+  @media(max-width:560px){ .gkpis{grid-template-columns:repeat(2,1fr);} }
+  .gkpis .kpi b{font-size:21px;}
+  .agday{font-size:12px;font-weight:800;margin:12px 0 6px;color:var(--tinta);text-transform:capitalize;}
+  .agday:first-child{margin-top:0;}
+  .agrow{display:flex;gap:8px;align-items:baseline;padding:7px 9px;border:1px solid var(--linea);border-left:4px solid var(--age);
+    border-radius:9px;margin-bottom:6px;cursor:pointer;font-size:12.5px;font-weight:700;}
+  .agrow:hover{background:#f4f8ff;}
+  .agrow.late{border-left-color:var(--rojo);} .agrow.nof{border-left-color:#e0b25a;}
+  .agrow .sn{background:var(--tinta);color:#fff;font-size:10px;font-weight:800;border-radius:5px;padding:1px 5px;flex:none;}
+  .agrow em{font-style:normal;color:var(--gris);font-weight:700;}
+  details.gfin summary{cursor:pointer;font-size:12px;font-weight:800;color:var(--gris);text-transform:uppercase;letter-spacing:.03em;margin:14px 0 8px;}
+
   /* ===== RESPONSABLE POR SESIÓN ===== */
   .ses .rlab{display:block;font-size:10.5px;font-weight:800;color:var(--gris);text-transform:uppercase;letter-spacing:.03em;margin:10px 0 4px;}
   .ses input.rin,#r-bulk{width:100%;font-family:inherit;font-size:14px;font-weight:600;color:var(--tinta);
@@ -346,6 +381,7 @@
     <button id="tab-reg" class="on" onclick="setTab('reg')">Registrar</button>
     <button id="tab-col" onclick="setTab('col')">Colegio</button>
     <button id="tab-gen" onclick="setTab('gen')">Aulas</button>
+    <button id="tab-ges" onclick="setTab('ges')">Gestores</button>
     <button id="tab-pro" onclick="setTab('pro')">Progreso</button>
     <button id="tab-cal" onclick="setTab('cal')">Calendario</button>
   </div>
@@ -379,7 +415,6 @@
       </div>
     </div>
     <div id="sesiones" class="sesiones"></div>
-    <datalist id="resp-list"></datalist>
     <div class="card name-wrap" id="namewrap">
       <label class="fld">¿Quién registra?</label>
       <select id="reg-name"></select>
@@ -521,6 +556,17 @@
   </div>
 </div>
 
+  <!-- GESTORES -->
+  <div id="view-ges" class="hide">
+    <div class="card">
+      <div class="calfil" style="grid-template-columns:repeat(auto-fit,minmax(200px,1fr));">
+        <div><label class="fld">Gestor(a)</label><select id="g-sel" onchange="renderGestor()"></select></div>
+        <div><label class="fld">Equipo</label><select id="g-eq" onchange="fillGSel();renderGestor()"></select></div>
+      </div>
+    </div>
+    <div id="g-body"></div>
+  </div>
+
   <!-- CALENDARIO -->
   <div id="view-cal" class="hide">
     <div class="seg2" style="max-width:460px;">
@@ -660,7 +706,7 @@ async function loadData(){
     ]);
     const byId={};
     CLASES = (cl||[]).filter(r=>r.class_id).map(r=>{
-      const c={ id:r.class_id, ges:limpiarNombre(r.gestor), cod:r.codigo_aer, loc:r.localidad, col:r.colegio,
+      const c={ id:r.class_id, ges:r.gestor, cod:r.codigo_aer, loc:r.localidad, col:r.colegio,
         jor:r.jornada, curso:r.curso, aula:r.aula, est:r.estudiantes, con:r.contacto_colegio,
         rol:r.rol_contacto, cel:r.celular_contacto,
         ses:Array.from({length:NSES},()=>({f:"",e:0})) };
@@ -668,7 +714,7 @@ async function loadData(){
     });
     (se||[]).forEach(r=>{ const c=byId[r.class_id]; const j=parseInt(r.sesion,10)-1;  // sesión 1..4 -> índice 0..3
       if(c && j>=0 && j<NSES){ c.ses[j]={ f:String(r.fecha||"").slice(0,10), e:estadoNum(r.estado),
-        r:limpiarNombre(r.updated_by) }; }});   // r = responsable de ESA sesión (se guarda en updated_by)
+        r:String(r.updated_by||"") }; }});   // r = responsable de ESA sesión (se guarda en updated_by)
     unificarNombres();
     afterLoad();
   }catch(err){
@@ -697,6 +743,8 @@ function afterLoad(){
   $('c-eq').innerHTML  = opt("","Todos los equipos")+opt("Promoción y Prevención")+opt("Aulas con Emoción");
   $('c-loc').innerHTML = opt("","Todas las localidades")+qls.map(x=>opt(x)).join('');
   fillCGes();
+  $('g-eq').innerHTML = opt("","Todos los equipos")+opt("Promoción y Prevención")+opt("Aulas con Emoción");
+  fillGSel();
   $('addbtn').disabled = false;   // habilita "Agregar aula" solo cuando ya hay datos
   if(!CONFIG.APPS_URL){ $('btn-save').textContent="Guardar (demo)"; }
 }
@@ -822,17 +870,16 @@ function onCol(){ const loc=$('sel-loc').value, col=$('sel-col').value;
 function clearDetail(){ cur=null; draft=null;
   ['clsinfo','sesiones','namewrap','actions'].forEach(x=>$(x).classList.remove('show')); }
 function onAula(){ const id=$('sel-aula').value; cur=CLASES.find(c=>c.id===id)||null;
-  if(!cur){ clearDetail(); return; } draft=cur.ses.map(s=>({f:s.f,e:s.e,r:s.r||cur.ges||""})); renderClase(); }
+  if(!cur){ clearDetail(); return; } draft=cur.ses.map(s=>({f:s.f,e:s.e,p:personasDe(s.r||cur.ges)})); BULK=[]; renderClase(); }
 function renderClase(){
   $('i-cur').textContent=cur.curso||"—"; $('i-ges').textContent=cur.ges||"—";
   $('i-est').textContent=cur.est||"—"; $('i-con').textContent=cur.con||"—";
   $('clsinfo').classList.add('show');
-  $('resp-list').innerHTML=nombresResp().map(n=>`<option value="${escA(n)}"></option>`).join('');
   let html=`<div class="ses rbulk"><div class="ti">¿Cambió la dupla o se fue alguien?</div>
-      <div class="rsub">Escribe el nuevo nombre y aplícalo a las sesiones que aún no están completadas.
-        También puedes cambiar el nombre en cada sesión.</div>
-      <div class="rrow"><input id="r-bulk" list="resp-list" autocomplete="off" placeholder="Nuevo responsable">
-        <button onclick="applyBulk()">Aplicar</button></div></div>`;
+      <div class="rsub">Elige a los nuevos gestores y aplícalos a todas las sesiones que aún no están completadas.
+        También puedes elegirlos en cada sesión.</div>
+      ${pickerHTML('b', BULK)}
+      <div class="rrow"><button onclick="applyBulk()">Aplicar a las sesiones pendientes</button></div></div>`;
   for(let i=0;i<NSES;i++){ const s=draft[i];
     html+=`<div class="ses"><div class="hd"><div class="num">${i+1}</div><div class="ti">Sesión ${i+1}</div></div>
       <div class="seg">
@@ -841,59 +888,72 @@ function renderClase(){
         <button class="s-com ${s.e===2?'on':''}" onclick="setEstado(${i},2)">Completada</button>
       </div>
       <input type="date" value="${s.f}" ${s.e===0?'disabled':''} onchange="setFecha(${i},this.value)">
-      <label class="rlab">Responsable · ${s.e===2?'quién la hizo':'quién la hará'}</label>
-      <input class="rin" list="resp-list" autocomplete="off" value="${escA(s.r)}" placeholder="Nombre o dupla"
-             oninput="setResp(${i},this.value)"></div>`;
+      <label class="rlab">Gestor(es) · ${s.e===2?'quién la hizo':'quién la hará'}</label>
+      ${pickerHTML(String(i), s.p)}</div>`;
   }
   $('sesiones').innerHTML=html; $('sesiones').classList.add('show');
   $('actions').classList.add('show');
   updateProg();
 }
 const escA = s => esc(s).replace(/"/g,'&quot;');
-/* Un mismo nombre llega escrito de varias formas ("Tania Moreno- Lizeth" / "Tania Moreno - Lizeth").
-   limpiarNombre arregla espacios y guiones; unificarNombres junta las variantes que solo difieren
-   en espacios, tildes o mayúsculas y usa la forma más frecuente. */
-function limpiarNombre(x){
-  const t=String(x||"").replace(/\s+/g," ").replace(/\s*-\s*/g," - ").trim();
-  return /\(reporte del gestor\)/i.test(t)? "" : t;     // "Oscar (reporte del gestor)" no es un responsable
+
+/* ===== NOMBRES: una sola forma para cada persona =====
+   En la hoja los nombres están escritos de muchas formas ("Tania M", "Tania Moreno- Lizeth", "Cony y Vanne").
+   Cada nombre se parte en personas; cada persona se lleva a su nombre oficial (ALIAS_PERSONA y, para
+   diferencias de tildes/mayúsculas, la forma más frecuente); y la dupla se escribe siempre igual:
+   personas en orden alfabético separadas por " - ". Al guardar se escribe esa forma en la hoja. */
+const ALIAS_PERSONA = {"tania m":"Tania Moreno", "cony":"Conny", "vane":"Vanne"};
+let PERSONA_CANON = {};
+function personasDe(nombre){
+  return uniq(String(nombre||"").replace(/\s+/g," ").split(/\s*-\s*|\s+y\s+|\s*[,\/+&]\s*/)
+    .map(p=>p.trim()).filter(p=>p && !/\(reporte del gestor\)/i.test(p))
+    .map(p=>ALIAS_PERSONA[nrm(p)]||p).map(p=>PERSONA_CANON[nrm(p)]||p));
 }
+function duplaDe(lista){ return uniq(lista).sort((a,b)=>a.localeCompare(b,'es')).join(" - "); }
 function unificarNombres(){
   const cuenta={};
-  const ver=n=>{ if(!n) return; const k=nrm(n); cuenta[k]=cuenta[k]||{}; cuenta[k][n]=(cuenta[k][n]||0)+1; };
-  CLASES.forEach(c=>{ ver(c.ges); c.ses.forEach(s=>ver(s.r)); });
-  const canon={};
-  Object.keys(cuenta).forEach(k=>{ canon[k]=Object.entries(cuenta[k]).sort((a,b)=>b[1]-a[1])[0][0]; });
-  CLASES.forEach(c=>{ if(c.ges) c.ges=canon[nrm(c.ges)];
-    c.ses.forEach(s=>{ if(s.r) s.r=canon[nrm(s.r)]; }); });
+  CLASES.forEach(c=>[c.ges, ...c.ses.map(s=>s.r)].forEach(n=>personasDe(n).forEach(x=>{
+    const k=nrm(x); cuenta[k]=cuenta[k]||{}; cuenta[k][x]=(cuenta[k][x]||0)+1; })));
+  PERSONA_CANON={};
+  Object.keys(cuenta).forEach(k=>{ PERSONA_CANON[k]=Object.entries(cuenta[k]).sort((a,b)=>b[1]-a[1])[0][0]; });
+  CLASES.forEach(c=>{ c.ges=duplaDe(personasDe(c.ges)); c.ses.forEach(s=>{ s.r=duplaDe(personasDe(s.r)); }); });
 }
-/* al guardar: si el nombre ya existe escrito de otra forma, se usa la forma existente */
-function nombreCanon(x){ const n=limpiarNombre(x), k=nrm(n);
-  return n? (nombresResp().find(y=>nrm(y)===k) || n) : ""; }
-/* nombres sugeridos: gestores de las aulas + responsables ya escritos en sesiones */
-function nombresResp(){
-  const n=[]; CLASES.forEach(c=>{ n.push(c.ges); c.ses.forEach(s=>n.push(s.r)); });
-  return uniq(n.map(x=>String(x||"").trim()).filter(Boolean)).sort((a,b)=>a.localeCompare(b,'es'));
+
+/* ===== selector de gestores (chips) ===== */
+let BULK=[];
+const listaDe = k => k==='b'? BULK : draft[+k].p;
+function pickerHTML(k, sel){
+  const cands=uniq([...personasDe(cur.ges), ...draft.flatMap(s=>s.p), ...BULK]).sort((a,b)=>a.localeCompare(b,'es'));
+  const chips=cands.map(x=>{ const on=sel.includes(x);
+    return `<button type="button" class="pchip${on?' on':''}" onclick="togglePersona('${k}',${escA(JSON.stringify(x))})">${on?'✓ ':''}${esc(x)}</button>`; }).join('');
+  const otros=listaPersonas(CLASES).filter(x=>!cands.includes(x));
+  return `<div class="pick">${chips}<select class="padd" onchange="addPersona('${k}',this.value)">
+      <option value="">+ Otro gestor(a)…</option>${otros.map(x=>opt(escA(x),esc(x))).join('')}
+      <option value="__nuevo">✎ Escribir un nombre nuevo…</option></select></div>`;
+}
+function togglePersona(k,x){ const a=listaDe(k), j=a.indexOf(x); if(j>=0) a.splice(j,1); else a.push(x); renderClase(); }
+function addPersona(k,v){
+  if(v==="__nuevo"){ const t=prompt("Nombre del gestor(a):"); v=t? (personasDe(t)[0]||"") : ""; }
+  if(v && !listaDe(k).includes(v)) listaDe(k).push(v);
+  renderClase();
 }
 function setEstado(i,e){ draft[i].e=e; if(e===0) draft[i].f=""; renderClase(); }
 function setFecha(i,v){ draft[i].f=v; }
-function setResp(i,v){ draft[i].r=v; }
 function applyBulk(){
-  const v=nombreCanon($('r-bulk').value);
-  if(!v){ toast("Escribe el nombre del nuevo responsable"); $('r-bulk').focus(); return; }
-  let n=0; draft.forEach(s=>{ if(s.e!==2){ s.r=v; n++; } });
-  renderClase();
-  toast(n? `${v} quedó en ${n} sesión(es) pendiente(s). Toca Guardar.` : "Todas las sesiones están completadas");
+  if(!BULK.length){ toast("Elige al menos un gestor(a)"); return; }
+  let n=0; draft.forEach(s=>{ if(s.e!==2){ s.p=[...BULK]; n++; } });
+  const nom=duplaDe(BULK); BULK=[]; renderClase();
+  toast(n? `${nom} quedó en ${n} sesión(es) pendiente(s). Toca Guardar.` : "Todas las sesiones están completadas");
 }
 function updateProg(){ const d=draft.filter(s=>s.e===2).length;
   $('i-bar').style.width=(d/NSES*100)+'%'; $('i-lbl').textContent=`${d}/${NSES} sesiones completadas`; }
 /* El backend escribe `updated_by` igual para todas las sesiones de un envío.
-   Para guardar un responsable distinto por sesión, se hace un envío por cada nombre. */
+   Para guardar gestores distintos por sesión, se hace un envío por cada dupla. */
 async function save(){
-  const falta=draft.findIndex(s=>s.e!==0 && !String(s.r||"").trim());
-  if(falta>=0){ toast(`Escribe el responsable de la sesión ${falta+1}`); return; }
+  const falta=draft.findIndex(s=>s.e!==0 && !s.p.length);
+  if(falta>=0){ toast(`Elige el gestor(a) de la sesión ${falta+1}`); return; }
   const cid=cur.id, label=aulaLabel(cur);
-  const ses=draft.map((s,i)=>({sesion:i+1, fecha:s.f, estado:ESTADO_TXT[s.e],
-    r:nombreCanon(s.r)}));
+  const ses=draft.map((s,i)=>({sesion:i+1, fecha:s.f, estado:ESTADO_TXT[s.e], r:duplaDe(s.p)}));
   cur.ses=ses.map((s,i)=>({f:draft[i].f, e:draft[i].e, r:s.r}));     // actualiza en memoria
   const grupos={};
   ses.forEach(s=>{ (grupos[s.r]=grupos[s.r]||[]).push({sesion:s.sesion, fecha:s.fecha, estado:s.estado}); });
@@ -965,7 +1025,7 @@ function submitAula(){
       else { msg.className='a-msg err'; msg.textContent=(res&&res.error)||'No se pudo agregar.'; $('a-submit').disabled=false; } })
     .catch(()=>{ msg.className='a-msg err'; msg.textContent='Error de red. Reintenta.'; $('a-submit').disabled=false; });
 }
-function addToMemory(rec){ CLASES.push(rec); fillLoc(); fillDashLoc(); fillGenGes($('gen-eq').value||""); }
+function addToMemory(rec){ rec.ges=duplaDe(personasDe(rec.ges)); CLASES.push(rec); fillLoc(); fillDashLoc(); fillGenGes($('gen-eq').value||""); }
 function finishAdd(rec){ $('a-submit').disabled=false;
   setTimeout(()=>{ closeAdd(); toast('Aula agregada · '+rec.aula+' · '+rec.curso);
     $('sel-loc').value=rec.loc; onLoc(); $('sel-col').value=rec.col; onCol(); $('sel-aula').value=rec.id; onAula();
@@ -1293,11 +1353,6 @@ const respDe = (c,s) => s.r || c.ges || "";          // responsable de la sesió
 
 /* Filtros por PERSONA, no por dupla: "Tania Moreno - Lizeth" cuenta para Tania Moreno y para Lizeth.
    ALIAS_PERSONA junta formas distintas de escribir a la misma persona (clave sin tildes, en minúscula). */
-const ALIAS_PERSONA = {"tania m":"Tania Moreno", "cony":"Conny", "vane":"Vanne"};
-function personasDe(nombre){
-  return uniq(String(nombre||"").split(/\s+-\s+|\s+y\s+|\s*[,\/+&]\s*/)
-    .map(p=>p.trim()).filter(Boolean).map(p=>ALIAS_PERSONA[nrm(p)]||p));
-}
 function personaEn(nombre,p){ const k=nrm(p); return personasDe(nombre).some(x=>nrm(x)===k); }
 /* un aula es de una persona si esa persona es responsable de alguna de sus sesiones */
 function aulaDePersona(c,p){ return c.ses.some(s=>personaEn(respDe(c,s),p)); }
@@ -1425,6 +1480,29 @@ function estadoAula(c){
   return {c,g,hechas,pend,sinF,conF,venc,prox:futuras[0],fin:futuras.length? futuras[futuras.length-1].s.f : ""};
 }
 let E_FILTRO="";   // "" = todas menos terminadas | nsa | nca | cfa | cok | fin | venc
+function aulaCardHTML(x){
+      const c=x.c, g=x.g, m=E_META[g], ses=p=>`S${p.i+1} · ${fmtFecha(p.s.f)}`;
+      const dots=c.ses.map((s,j)=>`<i class="d${s.e}${(s.e!==2&&!s.f)?' nx':''}">${j+1}</i>`).join('');
+      let txt;
+      if(g==='nsa')      txt='Sin ninguna fecha · agendar las '+NSES+' sesiones';
+      else if(g==='nca'){ const pri=x.conF.slice().sort((a,b)=>a.s.f.localeCompare(b.s.f))[0];
+                          txt='Empieza: '+ses(pri)+(x.sinF.length? ` <em>· sin fecha: ${x.sinF.map(p=>'S'+(p.i+1)).join(', ')}</em>` : ''); }
+      else if(g==='fin') txt='Terminada';
+      else               txt=(x.prox? 'Próxima: '+ses(x.prox) : 'Sin próxima fecha')+
+                             (g==='cfa'? ` <em>· sin fecha: ${x.sinF.map(p=>'S'+(p.i+1)).join(', ')}</em>` : (x.fin? ` <em>· termina ${fmtCorta(x.fin)}</em>` : ''));
+      const warn=x.venc.length? `<div class="qwarn">⚠ Fecha vencida: ${x.venc.map(p=>'S'+(p.i+1)+' ('+fmtCorta(p.s.f)+')').join(', ')} · ¿se hizo?</div>` : '';
+      const resp=uniq((x.pend.length? x.pend : c.ses.map((s,i)=>({s,i}))).map(p=>respDe(c,p.s)).filter(Boolean)).join(' / ');
+      const tel=String(c.cel||'').replace(/\D/g,'');
+      const contacto=[c.con,c.rol].filter(Boolean).map(esc).join(' · ');
+      const sub=[c.loc, c.jor?'J. '+c.jor:'', c.est?c.est+' est.':''].filter(Boolean).map(esc).join(' · ');
+      return `<div class="qcard ${m.b}" onclick="irARegistrar('${esc(c.id)}')">
+        <div class="qn">${esc(shortCol(c.col))} · ${esc(aulaLabel(c))}<span class="qpc">${x.hechas}/${NSES}</span></div>
+        <div class="qs">${sub}</div>
+        <div class="qrow"><span class="qnext">${txt}</span><span class="qdots">${dots}</span></div>${warn}
+        <div class="qc">Responsable: <b>${esc(resp||'—')}</b>`+
+          ((contacto||tel)? `<br>Contacto: ${contacto}${tel?` · <a href="tel:${tel}" onclick="event.stopPropagation()">${tel}</a>`:''}` : '')+
+        `</div></div>`;
+}
 function setSFiltro(g){ E_FILTRO=(E_FILTRO===g? "" : g); renderSin(); }
 function renderSin(){
   const items=calData(true).map(estadoAula);
@@ -1450,45 +1528,108 @@ function renderSin(){
     if(!lista.length) return;
     const m=E_META[g];
     h+=`<div class="qgh"><i style="background:${m.c}"></i>${m.t} · ${lista.length} aula${lista.length===1?'':'s'}</div><div class="sagrid">`;
-    lista.forEach(x=>{
-      const c=x.c, ses=p=>`S${p.i+1} · ${fmtFecha(p.s.f)}`;
-      const dots=c.ses.map((s,j)=>`<i class="d${s.e}${(s.e!==2&&!s.f)?' nx':''}">${j+1}</i>`).join('');
-      let txt;
-      if(g==='nsa')      txt='Sin ninguna fecha · agendar las '+NSES+' sesiones';
-      else if(g==='nca'){ const pri=x.conF.slice().sort((a,b)=>a.s.f.localeCompare(b.s.f))[0];
-                          txt='Empieza: '+ses(pri)+(x.sinF.length? ` <em>· sin fecha: ${x.sinF.map(p=>'S'+(p.i+1)).join(', ')}</em>` : ''); }
-      else if(g==='fin') txt='Terminada';
-      else               txt=(x.prox? 'Próxima: '+ses(x.prox) : 'Sin próxima fecha')+
-                             (g==='cfa'? ` <em>· sin fecha: ${x.sinF.map(p=>'S'+(p.i+1)).join(', ')}</em>` : (x.fin? ` <em>· termina ${fmtCorta(x.fin)}</em>` : ''));
-      const warn=x.venc.length? `<div class="qwarn">⚠ Fecha vencida: ${x.venc.map(p=>'S'+(p.i+1)+' ('+fmtCorta(p.s.f)+')').join(', ')} · ¿se hizo?</div>` : '';
-      const resp=uniq((x.pend.length? x.pend : c.ses.map((s,i)=>({s,i}))).map(p=>respDe(c,p.s)).filter(Boolean)).join(' / ');
-      const tel=String(c.cel||'').replace(/\D/g,'');
-      const contacto=[c.con,c.rol].filter(Boolean).map(esc).join(' · ');
-      const sub=[c.loc, c.jor?'J. '+c.jor:'', c.est?c.est+' est.':''].filter(Boolean).map(esc).join(' · ');
-      h+=`<div class="qcard ${m.b}" onclick="irARegistrar('${esc(c.id)}')">
-        <div class="qn">${esc(shortCol(c.col))} · ${esc(aulaLabel(c))}<span class="qpc">${x.hechas}/${NSES}</span></div>
-        <div class="qs">${sub}</div>
-        <div class="qrow"><span class="qnext">${txt}</span><span class="qdots">${dots}</span></div>${warn}
-        <div class="qc">Responsable: <b>${esc(resp||'—')}</b>`+
-          ((contacto||tel)? `<br>Contacto: ${contacto}${tel?` · <a href="tel:${tel}" onclick="event.stopPropagation()">${tel}</a>`:''}` : '')+
-        `</div></div>`;
-    });
+    lista.forEach(x=>{ h+=aulaCardHTML(x); });
     h+=`</div>`;
   });
   $('s-body').innerHTML = h || `<div class="muted">Ninguna aula coincide con este filtro.</div>`;
 }
 
+/* ============ GESTORES ============ */
+function fillGSel(){
+  const eq=$('g-eq').value;
+  fillPersonas('g-sel', CLASES.filter(c=>!eq||teamLabel(c)===eq), "Todos · resumen por gestor(a)");
+}
+function verGestor(p){ $('g-sel').value=p; renderGestor(); window.scrollTo({top:0,behavior:'smooth'}); }
+function statsPersona(p, clases){
+  const aulas=new Set(), cols=new Set(), fin=new Set(), dias=new Set(), duplas=new Set(), comp=new Set(), compPend=new Set();
+  let ses=0, com=0, sinf=0, venc=0, ult="";
+  const agenda=[], atras=[];
+  clases.forEach(c=>{ let mia=false, pend=false;
+    c.ses.forEach((s,i)=>{ const r=respDe(c,s); if(!personaEn(r,p)) return;
+      mia=true; duplas.add(r); personasDe(r).forEach(x=>{ if(nrm(x)!==nrm(p)) comp.add(x); });
+      if(s.e===2){ com++; return; }
+      pend=true; ses++; personasDe(r).forEach(x=>{ if(nrm(x)!==nrm(p)) compPend.add(x); });
+      if(!s.f){ sinf++; atras.push({c,i,s}); }
+      else if(s.f<HOY){ venc++; atras.push({c,i,s}); }
+      else { dias.add(s.f); if(s.f>ult) ult=s.f; agenda.push({c,i,s}); }
+    });
+    if(pend){ aulas.add(c.id); cols.add(String(c.id).split('-')[0]); } else if(mia) fin.add(c.id);
+  });
+  return {p, aulas:aulas.size, cols:cols.size, ses, com, sinf, venc, dias:dias.size, ult, fin:fin.size,
+    duplas:[...duplas], agenda, atras,
+    comp:[...(compPend.size? compPend : comp)].sort((a,b)=>a.localeCompare(b,'es'))};   // con quién trabaja hoy (si ya terminó: con quién trabajó)
+}
+function renderGestor(){
+  const eq=$('g-eq').value, p=$('g-sel').value;
+  const clases=CLASES.filter(c=>!eq||teamLabel(c)===eq);
+  if(!p){
+    const filas=listaPersonas(clases).map(x=>statsPersona(x,clases))
+      .sort((a,b)=>b.ses-a.ses || b.aulas-a.aulas || a.p.localeCompare(b.p,'es'));
+    const act=filas.filter(f=>f.ses), tot=new Set(), totSes={n:0};
+    clases.forEach(c=>c.ses.forEach(s=>{ if(s.e!==2){ totSes.n++; tot.add(c.id); } }));
+    const z=v=>v? v : '<span class="gz">0</span>';
+    $('g-body').innerHTML=`<div class="card">
+      <div class="dtitle">Qué le falta a cada gestor(a) · toca una fila para ver el detalle</div>
+      <div class="estsum" style="margin:0 0 10px;"><b>${tot.size}</b> aulas y <b>${totSes.n}</b> sesiones pendientes en total ·
+        <b>${act.length}</b> gestores con trabajo pendiente. Una sesión cuenta para cada persona de la dupla.</div>
+      <div class="matrix-wrap"><table class="gtab"><thead><tr>
+        <th>Gestor(a)</th><th>Colegios</th><th>Aulas</th><th>Sesiones</th><th>Días agendados</th><th>Sin fecha</th><th>Vencidas</th><th>Último día</th><th>Terminadas</th>
+      </tr></thead><tbody>`+
+      filas.map(f=>`<tr class="gr${f.ses?'':' gdone'}" onclick="verGestor(${escA(JSON.stringify(f.p))})">
+        <td><b>${esc(f.p)}</b><span class="gd">${f.comp.length? 'con '+esc(f.comp.join(', ')) : 'sola / solo'}</span></td>
+        <td>${z(f.cols)}</td><td>${z(f.aulas)}</td><td><b>${z(f.ses)}</b></td><td>${z(f.dias)}</td>
+        <td class="${f.sinf?'gred':''}">${z(f.sinf)}</td><td class="${f.venc?'gred':''}">${z(f.venc)}</td>
+        <td>${f.ult? fmtCorta(f.ult) : (f.ses? '—' : '✓ al día')}</td><td>${z(f.fin)}</td></tr>`).join('')+
+      `</tbody></table></div></div>`;
+    return;
+  }
+  const st=statsPersona(p, clases);
+  const items=clases.filter(c=>aulaDePersona(c,p)).map(estadoAula);
+  const fecha=f=>`<div class="agday">${fmtFecha(f)}${f===HOY?' · hoy':''}</div>`;
+  const fila=(x,cls)=>{ const otros=personasDe(respDe(x.c,x.s)).filter(y=>nrm(y)!==nrm(p));
+    return `<div class="agrow ${cls}" onclick="irARegistrar('${esc(x.c.id)}')"><span class="sn">S${x.i+1}</span>
+      <span>${esc(shortCol(x.c.col))} · ${esc(aulaLabel(x.c))}${x.c.jor?' · '+esc(x.c.jor):''}
+      <em>${otros.length? ' · con '+esc(otros.join(', ')) : ''}</em></span></div>`; };
+  let agenda="", ultF="";
+  st.agenda.sort((a,b)=>a.s.f.localeCompare(b.s.f)||a.i-b.i).forEach(x=>{ if(x.s.f!==ultF){ agenda+=fecha(x.s.f); ultF=x.s.f; } agenda+=fila(x,''); });
+  const atras=st.atras.sort((a,b)=>(a.s.f||"9").localeCompare(b.s.f||"9")).map(x=>
+    fila(x, x.s.f? 'late' : 'nof').replace('</em></span>', `</em> <em style="color:${x.s.f?'var(--rojo)':'#b9750f'}">· ${x.s.f? 'vencida '+fmtCorta(x.s.f) : 'sin fecha'}</em></span>`)).join('');
+  let grupos="";
+  E_ORDEN.filter(g=>g!=='fin').forEach(g=>{ const l=items.filter(x=>x.g===g); if(!l.length) return;
+    grupos+=`<div class="qgh"><i style="background:${E_META[g].c}"></i>${E_META[g].t} · ${l.length}</div><div class="sagrid">${l.map(aulaCardHTML).join('')}</div>`; });
+  const fins=items.filter(x=>x.g==='fin');
+  if(fins.length) grupos+=`<details class="gfin"><summary>Terminadas · ${fins.length} aula(s)</summary><div class="sagrid">${fins.map(aulaCardHTML).join('')}</div></details>`;
+  $('g-body').innerHTML=`<div class="card">
+      <div class="ghead">${esc(p)}</div>
+      <div class="gsub">${st.comp.length? 'Trabaja con: '+esc(st.comp.join(', ')) : 'Trabaja sola / solo'} · Duplas registradas: ${esc(st.duplas.join(' · ')||'—')}</div>
+    </div>
+    <div class="gkpis">
+      <div class="kpi"><b>${st.aulas}</b><span>Aulas pendientes</span></div>
+      <div class="kpi"><b>${st.cols}</b><span>Colegios</span></div>
+      <div class="kpi c-age"><b>${st.ses}</b><span>Sesiones pendientes</span></div>
+      <div class="kpi"><b>${st.dias}</b><span>Días agendados</span></div>
+      <div class="kpi c-com"><b>${st.com}</b><span>Sesiones hechas</span></div>
+      <div class="kpi c-com"><b>${st.fin}</b><span>Aulas terminadas</span></div>
+      <div class="kpi"><b style="color:${st.sinf+st.venc?'var(--rojo)':'var(--gris)'}">${st.sinf+st.venc}</b><span>Sin fecha o vencidas</span></div>
+      <div class="kpi"><b style="font-size:16px;line-height:1.7">${st.ult? fmtCorta(st.ult) : '—'}</b><span>Último día</span></div>
+    </div>
+    ${atras? `<div class="card"><div class="dtitle" style="color:var(--rojo)">Por resolver · sin fecha o fecha vencida</div>${atras}</div>` : ''}
+    <div class="card"><div class="dtitle">Agenda · próximas sesiones</div>${agenda || '<div class="muted">No tiene sesiones agendadas desde hoy.</div>'}</div>
+    ${grupos? `<div class="card"><div class="dtitle">Sus aulas por estado</div>${grupos}</div>` : ''}`;
+}
+
 /* ============ tabs + toast ============ */
 function setTab(t){
-  ['reg','col','gen','pro','cal'].forEach(k=>{
+  ['reg','col','gen','ges','pro','cal'].forEach(k=>{
     $('view-'+k).classList.toggle('hide',t!==k);
     $('tab-'+k).classList.toggle('on',t===k);
   });
-  document.body.classList.toggle('wide', t==='cal');   // el calendario usa todo el ancho
+  document.body.classList.toggle('wide', t==='cal'||t==='ges');   // calendario y gestores usan todo el ancho
   if(t==='col') renderColegio();
   if(t==='gen') renderGen();
   if(t==='pro') setSub($('sub-au').classList.contains('on')?'au':'eq');
   if(t==='cal') setCalSub(C_SUB);
+  if(t==='ges') renderGestor();
 }
 let toTimer;
 function toast(m){ const t=$('toast'); t.textContent=m; t.classList.add('show');
